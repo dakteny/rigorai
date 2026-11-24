@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { resolvePlanAccess } from "@/lib/plan-access";
+import { planPriceLabel } from "@/lib/catalog";
 export const Route = createFileRoute("/pricing")({
   head: () =>
     pageHead(
@@ -23,13 +24,14 @@ export function Plans() {
     enabled: hydrated,
     queryFn: async () => {
       const { data } = await supabase.auth.getUser();
-      if (!data.user) return resolvePlanAccess([]);
+      if (!data.user) return { ...resolvePlanAccess([]), isSignedIn: false };
       const [roles, profile] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", data.user.id),
         supabase.from("profiles").select("disabled").eq("id", data.user.id).single(),
       ]);
-      if (roles.error || profile.error || profile.data.disabled) return resolvePlanAccess([]);
-      return resolvePlanAccess(roles.data);
+      if (roles.error || profile.error || profile.data.disabled)
+        return { ...resolvePlanAccess([]), isSignedIn: false };
+      return { ...resolvePlanAccess(roles.data), isSignedIn: true };
     },
   });
   const isAdmin = access?.isAdministrator === true;
@@ -38,7 +40,7 @@ export function Plans() {
       {[
         {
           name: "Free",
-          price: "$0",
+          price: planPriceLabel("Free"),
           caption: "A smarter place to start.",
           features: [
             "Workflow configuration",
@@ -49,7 +51,7 @@ export function Plans() {
         },
         {
           name: "Pro",
-          price: "Coming soon",
+          price: planPriceLabel("Pro"),
           caption: "More power for growing teams.",
           features: [
             "More automation capacity",
@@ -61,7 +63,7 @@ export function Plans() {
         },
         {
           name: "Business",
-          price: "Let’s talk",
+          price: planPriceLabel("Business"),
           caption: "Intelligence at your scale.",
           features: [
             "Higher automation capacity",
@@ -74,7 +76,7 @@ export function Plans() {
       ].map((p) => (
         <article className="service-card" key={p.name}>
           <span className="eyebrow">{p.name}</span>
-          <h3 className="text-3xl">{isAdmin ? "Included" : p.price}</h3>
+          <h3 className="text-3xl">{p.price}</h3>
           {isAdmin && <span className="text-xs text-success">Administrator access</span>}
           <p>{p.caption}</p>
           <ul className="space-y-4 my-8">
@@ -87,8 +89,12 @@ export function Plans() {
           </ul>
           <Button variant="brand" asChild>
             {isAdmin ? (
-              <Link to="/billing">
+              <Link to="/dashboard">
                 Open {p.name} access <ArrowUpRight />
+              </Link>
+            ) : p.name === "Free" && access?.isSignedIn ? (
+              <Link to="/dashboard">
+                Open Free access <ArrowUpRight />
               </Link>
             ) : p.name === "Free" ? (
               <Link to="/auth" search={{ mode: "signup" }}>

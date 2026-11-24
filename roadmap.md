@@ -1,4 +1,10 @@
 # Rigor AI
+- [x] Ensure logout clears the session, cached private work, and sign-in email/password fields; real desktop/mobile checks passed.
+- [x] Verify dashboard and work ownership across all private records and same-browser account changes.
+- [x] Verify users cannot edit, delete, create, or transfer work belonging to another user.
+- [x] Connect signed-in plan access and billing to the real private workspace; all administrator plan buttons verified on desktop/mobile.
+- [ ] Enable real subscription checkout — payment setup approval skipped; awaiting go-ahead.
+- [x] Show user-approved Pro US$50/month and Business US$100/month on pricing and billing.
 - [x] Tighten row-level rules and column permissions; real two-customer isolation, protected-field and disabled-account checks passed.
 - [x] Persist website contact settings and protected audit history with administrator, previous/new values and time; desktop/mobile read-back verified.
 - [x] Give verified administrators Free, Pro and Business access without changing payment records; desktop/mobile checks passed.

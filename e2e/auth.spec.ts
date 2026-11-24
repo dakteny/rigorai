@@ -193,6 +193,11 @@ test.describe("Real account lifecycle", () => {
     if (await menu.isVisible()) await menu.click();
     await page.getByRole("button", { name: "Log out", exact: true }).click();
     await expect(page).toHaveURL(/\/auth\?mode=login$/);
+    expect((await page.getByLabel("Email address", { exact: true }).inputValue()) === "").toBe(true);
+    expect((await page.getByLabel("Password", { exact: true }).inputValue()) === "").toBe(true);
+    await page.reload();
+    expect((await page.getByLabel("Email address", { exact: true }).inputValue()) === "").toBe(true);
+    expect((await page.getByLabel("Password", { exact: true }).inputValue()) === "").toBe(true);
     await page.goto("/automations");
     await expect(page).toHaveURL(/\/auth\?mode=login$/);
   });

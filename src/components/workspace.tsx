@@ -45,7 +45,7 @@ import {
   updateProfile,
   readNotification,
 } from "@/lib/platform.functions";
-import { providers, templates } from "@/lib/catalog";
+import { providers, templates, planPriceLabel } from "@/lib/catalog";
 import { providerLogos } from "@/lib/provider-logos";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -1277,16 +1277,20 @@ export function Billing() {
             : (data.subscription?.subscription_status ?? "Free workspace")}
         </span>
       </div>
-      <div
-        className={`grid ${data.planAccess.isAdministrator ? "md:grid-cols-3" : "md:grid-cols-2"} gap-6`}
-      >
-        {(data.planAccess.isAdministrator ? data.planAccess.plans : ["Pro", "Business"]).map(
+      <Button variant="brand" asChild>
+        <Link to="/dashboard">Open my workspace <ArrowUpRight /></Link>
+      </Button>
+      <div className="grid md:grid-cols-3 gap-6 mt-8">
+        {(["Free", "Pro", "Business"] as const).map(
           (p) => (
             <article key={p} className="service-card">
               <span className="eyebrow">{p}</span>
+              <h3 className="text-3xl">{planPriceLabel(p)}</h3>
               <h3>
                 {data.planAccess.isAdministrator
                   ? "Included for administrators"
+                  : p === "Free"
+                    ? "Your private workspace"
                   : p === "Pro"
                     ? "More power. More possibility."
                     : "Intelligence at your scale."}
@@ -1294,12 +1298,14 @@ export function Billing() {
               <p>
                 {data.planAccess.isAdministrator
                   ? "Administrator access included. External services still require configuration."
+                  : p === "Free"
+                    ? "Your saved workflows, AI agents and account activity. No payment required."
                   : "Paid subscriptions are not yet configured. No payment will be collected until secure payment verification is enabled."}
               </p>
               <Button variant="outline" className="mt-5" asChild>
-                <Link to={data.planAccess.isAdministrator ? "/dashboard" : "/contact"}>
-                  {data.planAccess.isAdministrator
-                    ? "Open workspace"
+                <Link to={data.planAccess.isAdministrator || p === "Free" ? "/dashboard" : "/contact"}>
+                  {data.planAccess.isAdministrator || p === "Free"
+                    ? `Open ${p} access`
                     : p === "Pro"
                       ? "Join the waitlist"
                       : "Contact sales"}

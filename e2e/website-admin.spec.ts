@@ -97,6 +97,8 @@ test("administrator accesses all plans and settings changes record who, when and
       page.getByRole("link", { name: `Open ${plan} access`, exact: true }),
     ).toBeVisible();
   await page.getByRole("link", { name: "Open Pro access", exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto("/billing");
   await expect(page).toHaveURL(/\/billing$/);
   await expect(
     page.getByRole("heading", { name: "Free · Pro · Business", exact: true }),
@@ -211,4 +213,24 @@ test("administrator accesses all plans and settings changes record who, when and
   const deleted = await client.from("website_settings_audit").delete().eq("id", audit.data.id);
   expect(altered.error?.code).toBe("42501");
   expect(deleted.error?.code).toBe("42501");
+});
+
+test("administrator plan buttons open a real private workspace without creating payments", async ({ page }) => {
+  page.setDefaultTimeout(20_000);
+  await page.goto("/auth?mode=login");
+  await page.getByLabel("Email address", { exact: true }).fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Log in", exact: true }).click();
+  await expect.poll(() => new URL(page.url()).pathname).toBe("/dashboard");
+  for (const path of ["/pricing", "/billing"]) {
+    for (const plan of ["Free", "Pro", "Business"]) {
+      await page.goto(path);
+      await page.getByRole("link", { name: `Open ${plan} access`, exact: true }).click();
+      await expect.poll(() => new URL(page.url()).pathname).toBe("/dashboard");
+      await expect(page.getByRole("heading", { name: "Welcome, Rigor.", exact: true })).toBeVisible();
+    }
+  }
+  const subscriptions = await service.from("subscriptions").select("id").eq("user_id", accountId);
+  expect(subscriptions.error).toBeNull();
+  expect(subscriptions.data).toEqual([]);
 });

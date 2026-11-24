@@ -24,6 +24,13 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
   const [error, setError] = useState("");
   const [show, setShow] = useState(false);
   const [ready, setReady] = useState(false);
+  const [emailValue, setEmailValue] = useState("");
+  const [passwordValue, setPasswordValue] = useState("");
+  function clearCredentials() {
+    setEmailValue("");
+    setPasswordValue("");
+    setShow(false);
+  }
   useEffect(() => {
     setReady(true);
     void supabase.auth.getUser().then(({ data }) => {
@@ -55,11 +62,15 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
           },
         });
         if (r.error) throw r.error;
-        if (r.data.session) await navigate({ to: "/dashboard" });
+        if (r.data.session) {
+          clearCredentials();
+          await navigate({ to: "/dashboard" });
+        }
         else setMessage("Check your email to confirm your account before signing in.");
       } else {
         const r = await supabase.auth.signInWithPassword({ email, password });
         if (r.error) throw r.error;
+        clearCredentials();
         await navigate({ to: "/dashboard" });
       }
     } catch (e) {
@@ -95,7 +106,7 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
               </Button>
             </div>
           ) : (
-            <form method="post" onSubmit={submit} className="space-y-5">
+            <form method="post" autoComplete="off" onSubmit={submit} className="space-y-5">
               {mode === "signup" && (
                 <label className="form-field">
                   Full name
@@ -114,8 +125,11 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
                 <input
                   name="email"
                   type="email"
+                  disabled={!ready || busy}
                   required
-                  autoComplete="email"
+                  autoComplete="off"
+                  value={emailValue}
+                  onChange={(event) => setEmailValue(event.target.value)}
                   className="field-control"
                   placeholder="you@company.com"
                 />
@@ -126,10 +140,13 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
                   <div className="relative">
                     <input
                       name="password"
+                      disabled={!ready || busy}
                       type={show ? "text" : "password"}
                       required
                       minLength={8}
-                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                      autoComplete={mode === "signup" ? "new-password" : "off"}
+                      value={passwordValue}
+                      onChange={(event) => setPasswordValue(event.target.value)}
                       className="field-control pr-12"
                       placeholder="At least 8 characters"
                     />

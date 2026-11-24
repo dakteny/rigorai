@@ -8,11 +8,12 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { websiteSettingsOptions } from "@/lib/website-settings-query";
 import { recoveryIntentKey } from "@/lib/recovery-intent";
+import { syncAccountCache } from "@/lib/account-cache";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -138,8 +139,12 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const accountId = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (["INITIAL_SESSION", "SIGNED_IN", "SIGNED_OUT", "PASSWORD_RECOVERY"].includes(event)) {
+        accountId.current = syncAccountCache(queryClient, accountId.current, session?.user.id ?? null);
+      }
       if (event === "PASSWORD_RECOVERY") {
         window.sessionStorage.setItem(recoveryIntentKey, "pending");
         return;

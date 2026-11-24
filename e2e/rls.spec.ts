@@ -19,8 +19,9 @@ function backend(key: string) {
   });
 }
 
-test("row-level rules isolate customers and prevent fabricated privileges and platform records", async () => {
+test("row-level rules isolate customers and prevent fabricated privileges and platform records", async ({ page }) => {
   test.setTimeout(180_000);
+  page.setDefaultTimeout(20_000);
   const secret = process.env["SUPABASE_SERVICE_ROLE_KEY"],
     key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!secret || !key) throw new Error("Real test credentials are required");
@@ -64,7 +65,7 @@ test("row-level rules isolate customers and prevent fabricated privileges and pl
         throw new Error("Own private record creation failed");
       workflows.push(workflow.data.id);
       agents.push(agent.data.id);
-      return { id, client, workflowId: workflow.data.id, agentId: agent.data.id };
+      return { id, client, email, password, workflowId: workflow.data.id, agentId: agent.data.id };
     }
     const a = await createCustomer(),
       b = await createCustomer();
@@ -98,11 +99,75 @@ test("row-level rules isolate customers and prevent fabricated privileges and pl
       .single();
     expect(unchanged.data?.name).toBe("Private draft workflow");
     expect(unchanged.data?.user_id).toBe(b.id);
+
+    // Test-only records belong to disposable accounts, never existing customer accounts.
+    const fixtures = await Promise.all([
+      service.from("subscriptions").insert({ user_id: b.id, plan: "free", subscription_status: "active" }),
+      service.from("integrations").insert({ user_id: b.id, provider: "Stripe", connection_status: "disconnected" }),
+      service.from("notifications").insert({ user_id: b.id, title: "Private B notification", message: "Isolation fixture" }),
+      service.from("agent_conversations").insert({ user_id: b.id, agent_id: b.agentId, prompt: "Isolation fixture", response: "Test-only private conversation" }),
+      service.from("automation_executions").insert({ user_id: b.id, automation_id: b.workflowId, execution_status: "failed", error_message: "Test-only isolation fixture; not an actual run" }),
+    ]);
+    if (fixtures.some((result) => result.error)) throw new Error("Private isolation fixture creation failed");
+    for (const table of ["automations", "ai_agents", "integrations", "notifications", "agent_conversations", "automation_executions", "activity_logs", "subscriptions", "user_roles"]) {
+      const ownerRead = await b.client.from(table).select("user_id").eq("user_id", b.id);
+      expect(ownerRead.error).toBeNull();
+      expect((ownerRead.data?.length ?? 0) > 0, `${table} must contain real private test rows`).toBe(true);
+      const otherRead = await a.client.from(table).select("user_id").eq("user_id", b.id);
+      expect(otherRead.error).toBeNull();
+      expect(otherRead.data, `${table} must hide another customer's work`).toEqual([]);
+    }
+
+    async function login(account: typeof a) {
+      await page.goto("/auth?mode=login");
+      await page.getByLabel("Email address", { exact: true }).fill(account.email);
+      await page.getByLabel("Password", { exact: true }).fill(account.password);
+      await page.getByRole("button", { name: "Log in", exact: true }).click();
+      await expect.poll(() => new URL(page.url()).pathname).toBe("/dashboard");
+    }
+    await login(a);
+    await page.goto("/billing");
+    await page.getByRole("link", { name: "Open Free access", exact: true }).click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/dashboard");
+    await page.goto("/automations");
+    await expect(page.getByRole("heading", { name: "Edited private draft", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Private draft workflow", exact: true })).toHaveCount(0);
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: "Access restricted", exact: true })).toBeVisible();
+    // Switch accounts in the same browser to check both persisted and cached isolation.
+    const menu = page.getByRole("button", { name: "Open sidebar", exact: true });
+    if (await menu.isVisible()) await menu.click();
+    await page.getByRole("button", { name: "Log out", exact: true }).click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe("/auth");
+    expect((await page.getByLabel("Email address", { exact: true }).inputValue()) === "").toBe(true);
+    expect((await page.getByLabel("Password", { exact: true }).inputValue()) === "").toBe(true);
+    await login(b);
+    await page.goto("/automations");
+    await expect(page.getByRole("heading", { name: "Private draft workflow", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Edited private draft", exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Private draft workflow", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Edited private draft", exact: true })).toHaveCount(0);
     const transferred = await a.client
       .from("automations")
       .update({ user_id: b.id })
       .eq("id", a.workflowId);
     expect(transferred.error?.code).toBe("42501");
+
+    const foreignWorkflowDelete = await a.client.from("automations").delete().eq("id", b.workflowId).select("id");
+    const foreignAgentEdit = await a.client.from("ai_agents").update({ instructions: "Unauthorized instructions" }).eq("id", b.agentId).select("id");
+    expect(foreignWorkflowDelete.data).toEqual([]);
+    expect(foreignAgentEdit.data).toEqual([]);
+    const foreignWorkflowCreate = await a.client.from("automations").insert({ user_id: b.id, name: "Unauthorized workflow" });
+    const foreignAgentCreate = await a.client.from("ai_agents").insert({ user_id: b.id, name: "Unauthorized agent", instructions: "Unauthorized instructions" });
+    const transferAgent = await a.client.from("ai_agents").update({ user_id: b.id }).eq("id", a.agentId);
+    expect(foreignWorkflowCreate.error?.code).toBe("42501");
+    expect(foreignAgentCreate.error?.code).toBe("42501");
+    expect(transferAgent.error?.code).toBe("42501");
+    const preservedAgent = await b.client.from("ai_agents").select("instructions").eq("id", b.agentId).single();
+    expect(preservedAgent.data?.instructions).toBe("Assist with customer requests");
+    const preservedWorkflow = await b.client.from("automations").select("name").eq("id", b.workflowId).single();
+    expect(preservedWorkflow.data?.name).toBe("Private draft workflow");
 
     const elevated = await a.client.from("user_roles").insert({ user_id: a.id, role: "admin" });
     expect(elevated.error?.code).toBe("42501");
@@ -187,6 +252,11 @@ test("row-level rules isolate customers and prevent fabricated privileges and pl
     const stillDisabled = await service.from("profiles").select("disabled").eq("id", a.id).single();
     expect(stillDisabled.data?.disabled).toBe(true);
   } finally {
+    // Remove fixture children first so foreign-key references cannot obstruct cleanup.
+    for (const id of accounts) {
+      await service.from("automation_executions").delete().eq("user_id", id);
+      await service.from("agent_conversations").delete().eq("user_id", id);
+    }
     for (const id of workflows) await service.from("automations").delete().eq("id", id);
     for (const id of agents) await service.from("ai_agents").delete().eq("id", id);
     for (const id of accounts) {
