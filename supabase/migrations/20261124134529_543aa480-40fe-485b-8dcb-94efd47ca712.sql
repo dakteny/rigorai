@@ -1,0 +1,1 @@
+CREATE INDEX website_settings_audit_actor ON public.website_settings_audit (actor_id);

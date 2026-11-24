@@ -119,7 +119,9 @@ export function WorkspaceShell({ title, children }: { title: string; children: R
                 {data.profile.full_name || "Your account"}
               </p>
               <p className="text-[10px] text-muted-foreground mt-1 capitalize">
-                {data.subscription?.plan ?? "Free"} plan
+                {data.planAccess.isAdministrator
+                  ? "All plans · Admin"
+                  : `${data.subscription?.plan ?? "Free"} plan`}
               </p>
             </div>
           </div>
@@ -1244,37 +1246,60 @@ export function Billing() {
       />
       <div className="border-y border-border py-8 my-8 flex justify-between items-center gap-5">
         <div>
-          <span className="eyebrow">Current plan</span>
+          <span className="eyebrow">
+            {data.planAccess.isAdministrator ? "Administrator access" : "Current plan"}
+          </span>
           <h2 className="text-3xl font-bold mt-3 capitalize">
-            {data.subscription?.plan ?? "Free"}
+            {data.planAccess.isAdministrator
+              ? "Free · Pro · Business"
+              : (data.subscription?.plan ?? "Free")}
           </h2>
           <p className="text-xs text-muted-foreground mt-3">
-            {data.subscription?.payment_provider
-              ? "Payment-provider managed subscription"
-              : "No payment method on file"}
+            {data.planAccess.isAdministrator
+              ? "All plans included · No subscription required"
+              : data.subscription?.payment_provider
+                ? "Payment-provider managed subscription"
+                : "No payment method on file"}
           </p>
         </div>
         <span className="status active">
-          {data.subscription?.subscription_status ?? "Free workspace"}
+          {data.planAccess.isAdministrator
+            ? "Administrator"
+            : (data.subscription?.subscription_status ?? "Free workspace")}
         </span>
       </div>
-      <div className="grid md:grid-cols-2 gap-6">
-        {["Pro", "Business"].map((p) => (
-          <article key={p} className="service-card">
-            <span className="eyebrow">{p}</span>
-            <h3>{p === "Pro" ? "More power. More possibility." : "Intelligence at your scale."}</h3>
-            <p>
-              Paid subscriptions are not yet configured. No payment will be collected until secure
-              payment verification is enabled.
-            </p>
-            <Button variant="outline" className="mt-5" asChild>
-              <Link to="/contact">
-                {p === "Pro" ? "Join the waitlist" : "Contact sales"}
-                <ArrowUpRight />
-              </Link>
-            </Button>
-          </article>
-        ))}
+      <div
+        className={`grid ${data.planAccess.isAdministrator ? "md:grid-cols-3" : "md:grid-cols-2"} gap-6`}
+      >
+        {(data.planAccess.isAdministrator ? data.planAccess.plans : ["Pro", "Business"]).map(
+          (p) => (
+            <article key={p} className="service-card">
+              <span className="eyebrow">{p}</span>
+              <h3>
+                {data.planAccess.isAdministrator
+                  ? "Included for administrators"
+                  : p === "Pro"
+                    ? "More power. More possibility."
+                    : "Intelligence at your scale."}
+              </h3>
+              <p>
+                {data.planAccess.isAdministrator
+                  ? "Administrator access included. External services still require configuration."
+                  : "Paid subscriptions are not yet configured. No payment will be collected until secure payment verification is enabled."}
+              </p>
+              <Button variant="outline" className="mt-5" asChild>
+                <Link to={data.planAccess.isAdministrator ? "/dashboard" : "/contact"}>
+                  {data.planAccess.isAdministrator
+                    ? "Open workspace"
+                    : p === "Pro"
+                      ? "Join the waitlist"
+                      : "Contact sales"}
+                  <ArrowUpRight />
+                </Link>
+              </Button>
+            </article>
+          ),
+        )}
       </div>
     </WorkspaceShell>
   );
@@ -1380,6 +1405,7 @@ export function AccountSettings() {
         </form>
         <h2 className="text-sm font-semibold mt-12 mb-6">Change password</h2>
         <form
+          method="post"
           className="space-y-5"
           onSubmit={async (e) => {
             e.preventDefault();

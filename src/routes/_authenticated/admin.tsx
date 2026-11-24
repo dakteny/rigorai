@@ -16,6 +16,8 @@ import {
   Workflow,
 } from "lucide-react";
 import { WorkspaceShell } from "@/components/workspace";
+import { AdminWebsiteSettings, AdminWebsiteAudit } from "@/components/admin-website-settings";
+import { websiteSettingsOptions, websiteAuditOptions } from "@/lib/website-settings-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,6 +47,8 @@ const tabs = [
   "Billing",
   "Activity",
   "Website",
+  "Website Settings",
+  "Audit Log",
 ] as const;
 type Tab = (typeof tabs)[number];
 type Edit =
@@ -78,7 +82,11 @@ export const Route = createFileRoute("/_authenticated/admin")({
   loader: async ({ context }) => {
     const data = await context.queryClient.ensureQueryData(workspaceOptions);
     if (data.roles.some((r) => r.role === "admin"))
-      await context.queryClient.ensureQueryData(options);
+      await Promise.all([
+        context.queryClient.ensureQueryData(options),
+        context.queryClient.ensureQueryData(websiteSettingsOptions),
+        context.queryClient.ensureQueryData(websiteAuditOptions),
+      ]);
   },
   component: AdminAccess,
 });
@@ -101,6 +109,7 @@ function AdminAccess() {
 }
 function Admin() {
   const { data } = useSuspenseQuery(options);
+  const { data: websiteAudit } = useSuspenseQuery(websiteAuditOptions);
   const { data: account } = useSuspenseQuery(workspaceOptions);
   const [tab, setTab] = useState<Tab>("Users");
   const [search, setSearch] = useState("");
@@ -125,6 +134,8 @@ function Admin() {
     await Promise.all([
       query.invalidateQueries({ queryKey: ["admin"] }),
       query.invalidateQueries({ queryKey: ["workspace"] }),
+      query.invalidateQueries({ queryKey: websiteSettingsOptions.queryKey }),
+      query.invalidateQueries({ queryKey: websiteAuditOptions.queryKey }),
     ]);
   }
   async function perform(action: () => Promise<unknown>, success: string) {
@@ -184,6 +195,12 @@ function Admin() {
     Billing: subscriptions.length,
     Activity: activity.length,
     Website: sitePages.length + workspacePages.length,
+    "Website Settings": 6,
+    "Audit Log": websiteAudit.filter((entry) =>
+      `${entry.actor_name} ${entry.actor_email} ${JSON.stringify(entry.changes)}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+    ).length,
   }[tab];
   return (
     <WorkspaceShell title="Administration">
@@ -249,7 +266,7 @@ function Admin() {
           {tab} <span className="ml-2 text-muted-foreground font-normal">{count}</span>
         </h2>
         <div className="flex items-center gap-2 min-w-0">
-          {tab !== "Website" && (
+          {tab !== "Website" && tab !== "Website Settings" && (
             <label className="flex items-center gap-2 border border-input rounded-md px-3 h-9 min-w-0">
               <Search size={15} className="text-muted-foreground shrink-0" />
               <input
@@ -274,6 +291,8 @@ function Admin() {
         </div>
       </div>
       <section id="admin-panel" role="tabpanel" aria-label={tab}>
+        {tab === "Website Settings" && <AdminWebsiteSettings />}
+        {tab === "Audit Log" && <AdminWebsiteAudit search={search} />}
         {tab === "Users" &&
           visibleUsers.map((u) => {
             const userRoles = roles(u.id);
@@ -495,14 +514,15 @@ function Admin() {
             </div>
           </>
         )}
-        {count === 0 && (
+        {count === 0 && tab !== "Audit Log" && (
           <div className="py-14 text-center text-sm text-muted-foreground">
             {search ? "No matching records." : "No records yet."}
           </div>
         )}
-        {tab !== "Website" && (
+        {tab !== "Website" && tab !== "Website Settings" && (
           <p className="text-xs text-muted-foreground pt-6">
-            Latest records · Up to {tab === "Messages" || tab === "Activity" ? "100" : "500"} shown
+            Latest records · Up to{" "}
+            {tab === "Messages" || tab === "Activity" || tab === "Audit Log" ? "100" : "500"} shown
           </p>
         )}
       </section>

@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import logo from "@/assets/rigor-logo.asset.json";
 import { useState, useEffect, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { websiteSettingsOptions } from "@/lib/website-settings-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 export function Brand() {
@@ -13,6 +14,7 @@ export function Brand() {
   );
 }
 export function Site({ children }: { children: ReactNode }) {
+  const { data: settings } = useSuspenseQuery(websiteSettingsOptions);
   const [open, setOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -90,40 +92,40 @@ export function Site({ children }: { children: ReactNode }) {
         <div className="site-container flex flex-wrap items-start justify-between gap-8">
           <div>
             <Brand />
-            <p className="mt-3 text-xs text-muted-foreground">
-              Intelligent Automation. Real Results.
-            </p>
+            <p className="mt-3 text-xs text-muted-foreground">{settings.tagline}</p>
           </div>
           <address className="not-italic grid gap-2 text-xs text-muted-foreground max-w-md">
             <p>
-              <span className="text-footer-accent font-semibold">Founder:</span> Gatlena Banguot —
-              Founder &amp; AI Automation Specialist
+              <span className="text-footer-accent font-semibold">Founder:</span> {settings.founder}
             </p>
             <p>
-              <span className="text-footer-accent font-semibold">Location:</span> Halifax, Nova
-              Scotia, Canada
+              <span className="text-footer-accent font-semibold">Location:</span>{" "}
+              {settings.location}
             </p>
             <p>
               <span className="text-footer-accent font-semibold">Website:</span>{" "}
               <a
                 className="hover:text-foreground"
-                href="https://www.RigorEx.ca"
+                href={settings.website}
                 target="_blank"
                 rel="noreferrer"
               >
-                www.RigorEx.ca
+                {settings.website.replace(/^https:\/\//, "").replace(/\/$/, "")}
               </a>
             </p>
             <p>
               <span className="text-footer-accent font-semibold">Email:</span>{" "}
-              <a className="hover:text-foreground" href="mailto:hello@rigorex.ca">
-                hello@rigorex.ca
+              <a className="hover:text-foreground" href={`mailto:${settings.email}`}>
+                {settings.email}
               </a>
             </p>
             <p>
               <span className="text-footer-accent font-semibold">Phone:</span>{" "}
-              <a className="hover:text-foreground" href="tel:+19022108363">
-                +1 (902) 210-8363
+              <a
+                className="hover:text-foreground"
+                href={`tel:${settings.phone.replace(/[^+\d]/g, "")}`}
+              >
+                {settings.phone}
               </a>
             </p>
           </address>

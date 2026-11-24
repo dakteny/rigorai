@@ -23,7 +23,9 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [show, setShow] = useState(false);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
+    setReady(true);
     void supabase.auth.getUser().then(({ data }) => {
       if (data.user) void navigate({ to: "/dashboard" });
     });
@@ -93,7 +95,7 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
               </Button>
             </div>
           ) : (
-            <form onSubmit={submit} className="space-y-5">
+            <form method="post" onSubmit={submit} className="space-y-5">
               {mode === "signup" && (
                 <label className="form-field">
                   Full name
@@ -156,7 +158,7 @@ function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
                   {error}
                 </p>
               )}
-              <Button variant="brand" className="w-full" disabled={busy}>
+              <Button variant="brand" className="w-full" disabled={busy || !ready}>
                 {busy
                   ? "Please wait…"
                   : mode === "signup"

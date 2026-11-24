@@ -2,6 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveAccount as requireSupabaseAuth } from "./account-middleware";
 import { contactSchema, workflowSchema, agentSchema } from "./validation";
+import { resolvePlanAccess } from "./plan-access";
+import { saveWebsiteSettingsSchema } from "./website-settings";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import {
   adminRecordSchema,
   adminRoleSchema,
@@ -84,6 +88,7 @@ export const workspace = createServerFn({ method: "GET" })
       subscription: subscription.data,
       notifications: notifications.data ?? [],
       roles: roles.data ?? [],
+      planAccess: resolvePlanAccess(roles.data ?? [], subscription.data?.plan),
       conversations: conversations.data ?? [],
     };
   });
@@ -360,13 +365,11 @@ export const grantAdminRole = createServerFn({ method: "POST" })
     if (existing.data.length) return { ok: true };
     const result = await s.from("user_roles").insert({ user_id: data.id, role: data.role });
     if (result.error) throw new Error(result.error.message);
-    const log = await s
-      .from("activity_logs")
-      .insert({
-        user_id: context.userId,
-        action: "access_granted",
-        description: `Granted ${data.role} access to account ${data.id}`,
-      });
+    const log = await s.from("activity_logs").insert({
+      user_id: context.userId,
+      action: "access_granted",
+      description: `Granted ${data.role} access to account ${data.id}`,
+    });
     if (log.error)
       throw new Error("Access granted, but activity could not be saved. Refresh before retrying.");
     return { ok: true };
@@ -393,14 +396,81 @@ export const adminSaveRecord = createServerFn({ method: "POST" })
             .select("id")
             .single();
     if (result.error) throw new Error(result.error.message);
-    const log = await s
-      .from("activity_logs")
-      .insert({
-        user_id: context.userId,
-        action: "admin_record_updated",
-        description: `Updated ${data.kind} ${data.id}`,
-      });
+    const log = await s.from("activity_logs").insert({
+      user_id: context.userId,
+      action: "admin_record_updated",
+      description: `Updated ${data.kind} ${data.id}`,
+    });
     if (log.error)
       throw new Error("Changes saved, but activity could not be saved. Refresh before retrying.");
     return { ok: true };
+  });
+
+export const getWebsiteSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) throw new Error("Website settings are unavailable");
+  const s = createClient<Database>(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`)
+          headers.delete("Authorization");
+        headers.set("apikey", key);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+  const result = await s
+    .from("website_settings")
+    .select("founder, location, website, email, phone, tagline, updated_at")
+    .eq("id", "primary")
+    .single();
+  if (result.error) throw new Error("Website settings could not be loaded");
+  return result.data;
+});
+
+export const saveWebsiteSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(saveWebsiteSettingsSchema)
+  .handler(async ({ data, context }) => {
+    const role = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    assertAdministrator(!role.error && role.data === true);
+    const { expected_updated_at, ...changes } = data;
+    const result = await context.supabase
+      .from("website_settings")
+      .update(changes)
+      .eq("id", "primary")
+      .eq("updated_at", expected_updated_at)
+      .select("updated_at")
+      .single();
+    if (result.error)
+      throw new Error(
+        result.error.code === "PGRST116"
+          ? "These settings changed since you opened them. Refresh and try again."
+          : "Settings could not be saved. No changes were applied.",
+      );
+    return result.data;
+  });
+
+export const getWebsiteSettingsAudit = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const role = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    assertAdministrator(!role.error && role.data === true);
+    const result = await context.supabase
+      .from("website_settings_audit")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(100);
+    if (result.error) throw new Error("Website change history could not be loaded");
+    return result.data;
   });

@@ -41,7 +41,7 @@ function Reset() {
         <div className="auth-panel">
           <h1 className="section-title">A fresh start.</h1>
           {valid && (
-            <form className="space-y-5" onSubmit={submit}>
+            <form method="post" className="space-y-5" onSubmit={submit}>
               <label className="form-field">
                 New password
                 <input

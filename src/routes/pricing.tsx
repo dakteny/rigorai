@@ -3,6 +3,10 @@ import { Check, ArrowUpRight } from "lucide-react";
 import { Site, Intro } from "@/components/site";
 import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/metadata";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { resolvePlanAccess } from "@/lib/plan-access";
 export const Route = createFileRoute("/pricing")({
   head: () =>
     pageHead(
@@ -12,6 +16,23 @@ export const Route = createFileRoute("/pricing")({
   component: Pricing,
 });
 export function Plans() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const { data: access } = useQuery({
+    queryKey: ["public-plan-access"],
+    enabled: hydrated,
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return resolvePlanAccess([]);
+      const [roles, profile] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", data.user.id),
+        supabase.from("profiles").select("disabled").eq("id", data.user.id).single(),
+      ]);
+      if (roles.error || profile.error || profile.data.disabled) return resolvePlanAccess([]);
+      return resolvePlanAccess(roles.data);
+    },
+  });
+  const isAdmin = access?.isAdministrator === true;
   return (
     <div className="service-grid">
       {[
@@ -53,7 +74,8 @@ export function Plans() {
       ].map((p) => (
         <article className="service-card" key={p.name}>
           <span className="eyebrow">{p.name}</span>
-          <h3 className="text-3xl">{p.price}</h3>
+          <h3 className="text-3xl">{isAdmin ? "Included" : p.price}</h3>
+          {isAdmin && <span className="text-xs text-success">Administrator access</span>}
           <p>{p.caption}</p>
           <ul className="space-y-4 my-8">
             {p.features.map((f) => (
@@ -64,7 +86,11 @@ export function Plans() {
             ))}
           </ul>
           <Button variant={p.name === "Pro" ? "brand" : "outline"} asChild>
-            {p.name === "Free" ? (
+            {isAdmin ? (
+              <Link to="/billing">
+                Open {p.name} access <ArrowUpRight />
+              </Link>
+            ) : p.name === "Free" ? (
               <Link to="/auth" search={{ mode: "signup" }}>
                 Get Started Free <ArrowUpRight />
               </Link>
