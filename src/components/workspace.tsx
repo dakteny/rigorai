@@ -1060,7 +1060,7 @@ export function Integrations() {
                 </div>
                 <h3>{p}</h3>
                 <p>Bring {p} into your connected automation workspace.</p>
-                <Button variant="outline" className="mt-5" onClick={() => setProvider(p)}>
+                <Button variant="brand" className="mt-5" onClick={() => setProvider(p)}>
                   <Plug />
                   {connected ? "Manage connection" : "Connect"}
                 </Button>
