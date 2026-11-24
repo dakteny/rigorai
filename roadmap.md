@@ -1,7 +1,13 @@
 # Rigor AI
-- [ ] Public home, services, about, pricing, contact.
-- [ ] Secure accounts, profiles, password recovery, avatars.
-- [ ] Private dashboard, workflow CRUD and execution history, AI agents and conversation history.
-- [ ] Integrations, notifications, analytics, billing readiness, admin authorization.
-- [ ] Verify central flows, tests, setup documentation.
-- [ ] Connect n8n, end-user integrations and Stripe when credentials are supplied.
+- [x] Public home, services, about, pricing readiness, persisted contact.
+- [x] Account screens, private profiles, password recovery and avatar storage.
+- [x] Database-backed private dashboard, workflow CRUD/history, AI agent CRUD/testing/history.
+- [x] Integration marketplace/configuration states, notifications, execution-derived analytics, billing readiness, admin monitoring/account controls.
+- [x] Public contact persistence, signed-out route protection, mobile navigation, integrity tests and setup documentation.
+- [ ] Authenticated end-to-end, role-isolation, email delivery/recovery and live AI verification — blocked by unavailable unmanaged external account session.
+- [ ] Real n8n execution and signed result callbacks — connection was declined.
+- [ ] Personal integration authorization — provider connections and per-user authorization setup missing.
+- [ ] Stripe checkout, portal, verified webhooks and paid entitlements — payment configuration, approved prices and limits missing.
+- [ ] Admin-editable services/plans — persisted catalog management not implemented; pricing/entitlement policy not supplied.
+- [ ] Approved customer testimonials — customer content missing.
+- [ ] Additional shared request limits — deferred by user to deployment review.

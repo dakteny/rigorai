@@ -1,8 +1,95 @@
-import {createFileRoute,Link} from '@tanstack/react-router';
-import {Check,ArrowUpRight} from 'lucide-react';
-import {Site,Intro} from '@/components/site';
-import {Button} from '@/components/ui/button';
-import {pageHead} from '@/lib/metadata';
-export const Route=createFileRoute('/pricing')({head:()=>pageHead('Plans & Pricing','Explore the Free, Pro and Business plans for Rigor AI intelligent automation.'),component:Pricing});
-export function Plans(){return <div className="service-grid">{[{name:'Free',price:'$0',caption:'A smarter place to start.',features:['Workflow configuration','Basic integrations','AI agent configuration','Your private dashboard']},{name:'Pro',price:'Coming soon',caption:'More power for growing teams.',features:['More automation capacity','Advanced integrations','Increased AI usage','Advanced analytics','Priority support']},{name:'Business',price:'Let’s talk',caption:'Intelligence at your scale.',features:['Higher automation capacity','Advanced AI agents','Team collaboration','Custom integrations','Dedicated support']}].map(p=><article className="service-card" key={p.name}><span className="eyebrow">{p.name}</span><h3 className="text-3xl">{p.price}</h3><p>{p.caption}</p><ul className="space-y-4 my-8">{p.features.map(f=><li key={f} className="text-xs flex gap-2"><Check size={14} className="text-electric"/>{f}</li>)}</ul><Button variant={p.name==='Pro'?'brand':'outline'} asChild>{p.name==='Free'?<Link to="/auth" search={{mode:'signup'}}>Get Started Free <ArrowUpRight/></Link>:<Link to="/contact">{p.name==='Pro'?'Join the waitlist':'Contact sales'} <ArrowUpRight/></Link>}</Button></article>)}</div>}
-function Pricing(){return <Site><section className="section site-container"><Intro eyebrow="Room to grow" title="Start small. Think bigger." description="Start with a Free workspace. Pro and Business subscriptions will be available after payment configuration; no payment is collected here."/><Plans/></section></Site>}
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check, ArrowUpRight } from "lucide-react";
+import { Site, Intro } from "@/components/site";
+import { Button } from "@/components/ui/button";
+import { pageHead } from "@/lib/metadata";
+export const Route = createFileRoute("/pricing")({
+  head: () =>
+    pageHead(
+      "Plans & Pricing",
+      "Explore the Free, Pro and Business plans for Rigor AI intelligent automation.",
+    ),
+  component: Pricing,
+});
+export function Plans() {
+  return (
+    <div className="service-grid">
+      {[
+        {
+          name: "Free",
+          price: "$0",
+          caption: "A smarter place to start.",
+          features: [
+            "Workflow configuration",
+            "Basic integrations",
+            "AI agent configuration",
+            "Your private dashboard",
+          ],
+        },
+        {
+          name: "Pro",
+          price: "Coming soon",
+          caption: "More power for growing teams.",
+          features: [
+            "More automation capacity",
+            "Advanced integrations",
+            "Increased AI usage",
+            "Advanced analytics",
+            "Priority support",
+          ],
+        },
+        {
+          name: "Business",
+          price: "Let’s talk",
+          caption: "Intelligence at your scale.",
+          features: [
+            "Higher automation capacity",
+            "Advanced AI agents",
+            "Team collaboration",
+            "Custom integrations",
+            "Dedicated support",
+          ],
+        },
+      ].map((p) => (
+        <article className="service-card" key={p.name}>
+          <span className="eyebrow">{p.name}</span>
+          <h3 className="text-3xl">{p.price}</h3>
+          <p>{p.caption}</p>
+          <ul className="space-y-4 my-8">
+            {p.features.map((f) => (
+              <li key={f} className="text-xs flex gap-2">
+                <Check size={14} className="text-electric" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <Button variant={p.name === "Pro" ? "brand" : "outline"} asChild>
+            {p.name === "Free" ? (
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Get Started Free <ArrowUpRight />
+              </Link>
+            ) : (
+              <Link to="/contact">
+                {p.name === "Pro" ? "Join the waitlist" : "Contact sales"} <ArrowUpRight />
+              </Link>
+            )}
+          </Button>
+        </article>
+      ))}
+    </div>
+  );
+}
+function Pricing() {
+  return (
+    <Site>
+      <section className="section site-container">
+        <Intro
+          eyebrow="Room to grow"
+          title="Start small. Think bigger."
+          description="Start with a Free workspace. Pro and Business subscriptions will be available after payment configuration; no payment is collected here."
+        />
+        <Plans />
+      </section>
+    </Site>
+  );
+}

@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Application architecture
+- Use TanStack content routes and a client-only authenticated layout; public marketing pages remain shareable and private loaders run after validated sign-in.
+- Keep privileged operations inside authenticated server handlers and verify admin roles before loading the service client; RLS is the independent data boundary.
+- Store roles separately from editable profiles; execution and payment records are server-write-only to prevent fabricated results.
+- Keep server functions in `src/lib/platform.functions.ts` and shared workspace query options separate; page loaders preload the same query used by workspace views.
+- Unconfigured external services must expose configuration-required states rather than simulated execution, connection or payment success.

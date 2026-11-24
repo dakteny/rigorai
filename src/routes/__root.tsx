@@ -9,8 +9,8 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { supabase } from '@/integrations/supabase/client';
-import { Toaster } from '@/components/ui/sonner';
+import { supabase } from "@/integrations/supabase/client";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -84,16 +84,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Rigor AI – Intelligent Automation" },
-      { name: "description", content: "Intelligent automation, AI agents and connected business workflows from Rigor AI." },
+      {
+        name: "description",
+        content:
+          "Intelligent automation, AI agents and connected business workflows from Rigor AI.",
+      },
       { name: "author", content: "Rigor AI" },
       { property: "og:title", content: "Rigor AI – Intelligent Automation" },
-      { property: "og:description", content: "Intelligent automation, AI agents and connected business workflows from Rigor AI." },
+      {
+        property: "og:description",
+        content:
+          "Intelligent automation, AI agents and connected business workflows from Rigor AI.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
-      { rel:'stylesheet', href:'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700;750;800&display=swap' },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700;750;800&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -126,9 +137,9 @@ function RootComponent() {
   const router = useRouter();
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (!['SIGNED_IN','SIGNED_OUT','USER_UPDATED'].includes(event)) return;
+      if (!["SIGNED_IN", "SIGNED_OUT", "USER_UPDATED"].includes(event)) return;
       void router.invalidate();
-      if (event !== 'SIGNED_OUT') void queryClient.invalidateQueries();
+      if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);

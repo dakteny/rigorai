@@ -1,17 +1,291 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowRight, ArrowUpRight, Check, Sparkles, Zap, GitBranch, MessageSquare, ShoppingBag, Mail, Workflow, Bot, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Brand, Site } from '@/components/site';
-import { services } from '@/lib/catalog';
-import { pageHead } from '@/lib/metadata';
-import artwork from '@/assets/rigor-network.asset.json';
-export const Route = createFileRoute('/')({ head:()=>pageHead('Automate Smarter. Work Faster. Grow Bigger.','Rigor AI transforms the way businesses operate through intelligent automation, AI-powered workflows, and seamless application integrations.',artwork.url),component:Index });
-function Index() { return <Site>
- <section className="hero"><img className="hero-art" src={artwork.url} alt="A luminous AI processor connected to an automation network"/><div className="site-container hero-content"><span className="hero-pill"><Sparkles size={12} className="text-electric"/> THE NEXT GENERATION OF INTELLIGENT AUTOMATION <ArrowUpRight size={12}/></span><h1>Automate Smarter.<br/>Work Faster. <span className="gradient-text">Grow Bigger.</span></h1><p className="hero-copy">Rigor AI transforms the way businesses operate through intelligent<br className="hidden sm:block"/> automation, AI-powered workflows, and seamless application integrations.</p><div className="hero-actions"><Button size="lg" variant="brand" asChild><Link to="/auth" search={{mode:'signup'}}>Get Started Free <ArrowUpRight/></Link></Button><Button size="lg" variant="outline" asChild><Link to="/services">Explore Our Solutions <ArrowRight/></Link></Button></div><div className="hero-note"><span><Check size={11}/> No credit card required</span><span><Check size={11}/> Built for your business</span></div></div><div className="workflow-float float-left"><span className="service-icon"><Zap size={18}/></span><div>Intelligent workflows<small>Less busywork. More possibility.</small></div><GitBranch size={15} className="text-electric"/></div><div className="workflow-float float-right"><span className="service-icon"><Bot size={18}/></span><div>Your AI teammate<small>Ready for what comes next.</small></div><span className="size-1.5 rounded-full bg-success"/></div></section>
- <section className="partner-band"><div className="site-container"><p className="text-[10px] uppercase text-muted-foreground">Built to work with the tools you already love</p><div className="partners"><span className="partner"><MessageSquare size={22}/> slack</span><span className="partner"><ShoppingBag size={22}/> Shopify</span><span className="partner"><Mail size={22}/> Google</span><span className="partner"><Workflow size={22}/> n8n</span><span className="partner"><Sparkles size={22}/> OpenAI</span><span className="partner">HubSpot</span></div></div></section>
- <section className="section"><div className="site-container"><div className="flex flex-wrap items-end justify-between gap-5"><div><span className="eyebrow"><span className="size-1 rounded-full bg-electric"/> Built for what's next</span><h2 className="section-title">Big ideas. <span className="text-muted-foreground">Less busywork.</span></h2><p className="section-copy">From everyday tasks to your most ambitious goals, put intelligent<br className="hidden md:block"/> automation to work across your business.</p></div><Button variant="outline" asChild><Link to="/services">Explore all solutions <ArrowUpRight/></Link></Button></div><div className="service-grid">{services.slice(0,6).map(s=><Link key={s.name} to="/services" className="service-card"><div className="flex justify-between items-center"><span className="service-icon"><s.icon size={21}/></span><ArrowUpRight size={16} className="text-muted-foreground"/></div><h3>{s.name}</h3><p>{s.description}</p></Link>)}</div></div></section>
- <section className="section border-y border-border bg-card"><div className="site-container"><div className="text-center"><span className="eyebrow">A simpler way to work</span><h2 className="section-title">From an idea to an intelligent workflow.</h2></div><div className="grid gap-10 md:grid-cols-3 mt-12">{[['01','Connect your tools','Bring your applications together in one connected workspace.'],['02','Build your workflow','Choose a trigger, configure your actions, and make it your own.'],['03','Let intelligence take over','Activate connected workflows and follow real results as they happen.']].map(([n,t,d])=><div key={n}><span className="text-3xl font-bold gradient-text">{n}</span><h3 className="mt-5 mb-3 text-base font-semibold">{t}</h3><p className="section-copy">{d}</p></div>)}</div></div></section>
- <section className="section"><div className="site-container grid gap-10 md:grid-cols-2"><div><span className="eyebrow">Clarity at every step</span><h2 className="section-title">Your work. Your data.<br/>A clearer picture.</h2><p className="section-copy">Keep track of configured workflows, completed tasks, and execution errors in one private workspace. Real results—not guesswork.</p><Button variant="brand" className="mt-6" asChild><Link to="/auth" search={{mode:'signup'}}>Create your workspace <ArrowUpRight/></Link></Button></div><div className="grid grid-cols-2 gap-5">{[['10','Automation solutions'],['14','Integration providers'],['3','Plans to grow with you'],['1','Connected workspace']].map(([n,t])=><div key={t} className="border-b border-border pb-6"><strong className="text-4xl font-bold">{n}</strong><p className="text-xs text-muted-foreground mt-3">{t}</p></div>)}</div></div></section>
- <section className="section border-t border-border"><div className="site-container grid gap-10 md:grid-cols-2"><div><span className="eyebrow">Questions, answered</span><h2 className="section-title">A little clarity.<br/>A lot of possibilities.</h2><Button variant="link" asChild><Link to="/contact">Talk to our team <ArrowUpRight/></Link></Button></div><div>{[['What can I automate with Rigor AI?','Create workflows for customer support, email, lead capture, orders, and connected business processes.'],['Do I need coding experience?','You can configure triggers, actions, and agent instructions through your workspace. Custom integrations may require additional setup.'],['Can I start for free?','Yes. Create an account and start configuring workflows on the Free plan.'],['How are my data and integrations protected?','Private data is scoped to your account, and sensitive credentials remain on the server. Integrations are shown as connected only after verification.']].map(([q,a])=><details className="border-b border-border py-5" key={q}><summary className="flex justify-between cursor-pointer text-sm font-medium gap-4">{q}<ChevronDown size={16}/></summary><p className="section-copy mt-4">{a}</p></details>)}</div></div></section>
- <section className="section border-t border-border text-center"><div className="site-container"><Brand/><h2 className="section-title mt-6">Less repetition. <span className="gradient-text">More ambition.</span></h2><p className="section-copy mx-auto">Your next chapter starts with a smarter way to work.</p><div className="mt-6"><Button variant="brand" size="lg" asChild><Link to="/auth" search={{mode:'signup'}}>Get Started Free <ArrowUpRight/></Link></Button><Button variant="ghost" asChild><Link to="/pricing">View plans <ArrowRight/></Link></Button></div></div></section>
- </Site>; }
+import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  Sparkles,
+  Zap,
+  GitBranch,
+  MessageSquare,
+  ShoppingBag,
+  Mail,
+  Workflow,
+  Bot,
+  ChevronDown,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Brand, Site } from "@/components/site";
+import { services } from "@/lib/catalog";
+import { pageHead } from "@/lib/metadata";
+import artwork from "@/assets/rigor-network.asset.json";
+export const Route = createFileRoute("/")({
+  head: () =>
+    pageHead(
+      "Automate Smarter. Work Faster. Grow Bigger.",
+      "Rigor AI transforms the way businesses operate through intelligent automation, AI-powered workflows, and seamless application integrations.",
+      artwork.url,
+    ),
+  component: Index,
+});
+function Index() {
+  return (
+    <Site>
+      <section className="hero">
+        <img
+          className="hero-art"
+          src={artwork.url}
+          alt="A luminous AI processor connected to an automation network"
+        />
+        <div className="site-container hero-content">
+          <span className="hero-pill">
+            <Sparkles size={12} className="text-electric" /> THE NEXT GENERATION OF INTELLIGENT
+            AUTOMATION <ArrowUpRight size={12} />
+          </span>
+          <h1>
+            Automate Smarter.
+            <br />
+            Work Faster. <span className="gradient-text">Grow Bigger.</span>
+          </h1>
+          <p className="hero-copy">
+            Rigor AI transforms the way businesses operate through intelligent
+            <br className="hidden sm:block" /> automation, AI-powered workflows, and seamless
+            application integrations.
+          </p>
+          <div className="hero-actions">
+            <Button size="lg" variant="brand" asChild>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Get Started Free <ArrowUpRight />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/services">
+                Explore Our Solutions <ArrowRight />
+              </Link>
+            </Button>
+          </div>
+          <div className="hero-note">
+            <span>
+              <Check size={11} /> No credit card required
+            </span>
+            <span>
+              <Check size={11} /> Built for your business
+            </span>
+          </div>
+        </div>
+        <div className="workflow-float float-left">
+          <span className="service-icon">
+            <Zap size={18} />
+          </span>
+          <div>
+            Intelligent workflows<small>Less busywork. More possibility.</small>
+          </div>
+          <GitBranch size={15} className="text-electric" />
+        </div>
+        <div className="workflow-float float-right">
+          <span className="service-icon">
+            <Bot size={18} />
+          </span>
+          <div>
+            Your AI teammate<small>Ready for what comes next.</small>
+          </div>
+          <span className="size-1.5 rounded-full bg-success" />
+        </div>
+      </section>
+      <section className="partner-band">
+        <div className="site-container">
+          <p className="text-[10px] uppercase text-muted-foreground">
+            Built to work with the tools you already love
+          </p>
+          <div className="partners">
+            <span className="partner">
+              <MessageSquare size={22} /> slack
+            </span>
+            <span className="partner">
+              <ShoppingBag size={22} /> Shopify
+            </span>
+            <span className="partner">
+              <Mail size={22} /> Google
+            </span>
+            <span className="partner">
+              <Workflow size={22} /> n8n
+            </span>
+            <span className="partner">
+              <Sparkles size={22} /> OpenAI
+            </span>
+            <span className="partner">HubSpot</span>
+          </div>
+        </div>
+      </section>
+      <section className="section">
+        <div className="site-container">
+          <div className="flex flex-wrap items-end justify-between gap-5">
+            <div>
+              <span className="eyebrow">
+                <span className="size-1 rounded-full bg-electric" /> Built for what's next
+              </span>
+              <h2 className="section-title">
+                Big ideas. <span className="text-muted-foreground">Less busywork.</span>
+              </h2>
+              <p className="section-copy">
+                From everyday tasks to your most ambitious goals, put intelligent
+                <br className="hidden md:block" /> automation to work across your business.
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <Link to="/services">
+                Explore all solutions <ArrowUpRight />
+              </Link>
+            </Button>
+          </div>
+          <div className="service-grid">
+            {services.slice(0, 6).map((s) => (
+              <Link key={s.name} to="/services" className="service-card">
+                <div className="flex justify-between items-center">
+                  <span className="service-icon">
+                    <s.icon size={21} />
+                  </span>
+                  <ArrowUpRight size={16} className="text-muted-foreground" />
+                </div>
+                <h3>{s.name}</h3>
+                <p>{s.description}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="section border-y border-border bg-card">
+        <div className="site-container">
+          <div className="text-center">
+            <span className="eyebrow">A simpler way to work</span>
+            <h2 className="section-title">From an idea to an intelligent workflow.</h2>
+          </div>
+          <div className="grid gap-10 md:grid-cols-3 mt-12">
+            {[
+              [
+                "01",
+                "Connect your tools",
+                "Bring your applications together in one connected workspace.",
+              ],
+              [
+                "02",
+                "Build your workflow",
+                "Choose a trigger, configure your actions, and make it your own.",
+              ],
+              [
+                "03",
+                "Let intelligence take over",
+                "Activate connected workflows and follow real results as they happen.",
+              ],
+            ].map(([n, t, d]) => (
+              <div key={n}>
+                <span className="text-3xl font-bold gradient-text">{n}</span>
+                <h3 className="mt-5 mb-3 text-base font-semibold">{t}</h3>
+                <p className="section-copy">{d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="section">
+        <div className="site-container grid gap-10 md:grid-cols-2">
+          <div>
+            <span className="eyebrow">Clarity at every step</span>
+            <h2 className="section-title">
+              Your work. Your data.
+              <br />A clearer picture.
+            </h2>
+            <p className="section-copy">
+              Keep track of configured workflows, completed tasks, and execution errors in one
+              private workspace. Real results—not guesswork.
+            </p>
+            <Button variant="brand" className="mt-6" asChild>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Create your workspace <ArrowUpRight />
+              </Link>
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-5">
+            {[
+              ["10", "Automation solutions"],
+              ["14", "Integration providers"],
+              ["3", "Plans to grow with you"],
+              ["1", "Connected workspace"],
+            ].map(([n, t]) => (
+              <div key={t} className="border-b border-border pb-6">
+                <strong className="text-4xl font-bold">{n}</strong>
+                <p className="text-xs text-muted-foreground mt-3">{t}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="section border-t border-border">
+        <div className="site-container grid gap-10 md:grid-cols-2">
+          <div>
+            <span className="eyebrow">Questions, answered</span>
+            <h2 className="section-title">
+              A little clarity.
+              <br />A lot of possibilities.
+            </h2>
+            <Button variant="link" asChild>
+              <Link to="/contact">
+                Talk to our team <ArrowUpRight />
+              </Link>
+            </Button>
+          </div>
+          <div>
+            {[
+              [
+                "What can I automate with Rigor AI?",
+                "Create workflows for customer support, email, lead capture, orders, and connected business processes.",
+              ],
+              [
+                "Do I need coding experience?",
+                "You can configure triggers, actions, and agent instructions through your workspace. Custom integrations may require additional setup.",
+              ],
+              [
+                "Can I start for free?",
+                "Yes. Create an account and start configuring workflows on the Free plan.",
+              ],
+              [
+                "How are my data and integrations protected?",
+                "Private data is scoped to your account, and sensitive credentials remain on the server. Integrations are shown as connected only after verification.",
+              ],
+            ].map(([q, a]) => (
+              <details className="border-b border-border py-5" key={q}>
+                <summary className="flex justify-between cursor-pointer text-sm font-medium gap-4">
+                  {q}
+                  <ChevronDown size={16} />
+                </summary>
+                <p className="section-copy mt-4">{a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="section border-t border-border text-center">
+        <div className="site-container">
+          <Brand />
+          <h2 className="section-title mt-6">
+            Less repetition. <span className="gradient-text">More ambition.</span>
+          </h2>
+          <p className="section-copy mx-auto">
+            Your next chapter starts with a smarter way to work.
+          </p>
+          <div className="mt-6">
+            <Button variant="brand" size="lg" asChild>
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Get Started Free <ArrowUpRight />
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/pricing">
+                View plans <ArrowRight />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    </Site>
+  );
+}
