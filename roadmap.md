@@ -1,12 +1,13 @@
 # Rigor AI
-- [ ] Replace the site logo and favicon with the supplied Rigor AI image.
-- [ ] Add and run repeatable browser checks for sign-up, sign-in, password recovery and private workspace access using isolated test accounts.
+- [x] Replace the site logo and favicon with the supplied Rigor AI image; desktop/mobile rendering verified.
+- [x] Add repeatable real-auth browser checks; 6 desktop/mobile login, recovery-password and private-access checks passed; mobile logout scrolling fixed.
+- [ ] Run the added sign-up and recovery-email checks — controlled plus-addressable test inbox not supplied; email delivery remains unverified.
 - [x] Public home, services, about, pricing readiness, persisted contact.
 - [x] Account screens, private profiles, password recovery and avatar storage.
 - [x] Database-backed private dashboard, workflow CRUD/history, AI agent CRUD/testing/history.
 - [x] Integration marketplace/configuration states, notifications, execution-derived analytics, billing readiness, admin monitoring/account controls.
 - [x] Public contact persistence, signed-out route protection, mobile navigation, integrity tests and setup documentation.
-- [ ] Authenticated end-to-end, role-isolation, email delivery/recovery and live AI verification — blocked by unavailable unmanaged external account session.
+- [ ] Additional workflow CRUD, two-customer data isolation, delivered-email and live AI launch verification — outside this auth-check scope; controlled inbox and real workflow/AI validation still required.
 - [ ] Real n8n execution and signed result callbacks — connection was declined.
 - [ ] Personal integration authorization — provider connections and per-user authorization setup missing.
 - [ ] Stripe checkout, portal, verified webhooks and paid entitlements — payment configuration, approved prices and limits missing.

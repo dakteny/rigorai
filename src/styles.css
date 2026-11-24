@@ -209,7 +209,12 @@
   place-items: center;
   color: var(--electric);
 }
-.brand-logo { width: 88px; height: 75px; object-fit: contain; flex-shrink: 0; }
+.brand-logo {
+  width: 88px;
+  height: 75px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
 .nav-links {
   display: flex;
   gap: 30px;
