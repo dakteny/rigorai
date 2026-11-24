@@ -443,6 +443,77 @@ export type Database = {
         }
         Relationships: []
       }
+      website_settings: {
+        Row: {
+          created_at: string
+          email: string
+          founder: string
+          id: string
+          location: string
+          phone: string
+          tagline: string
+          updated_at: string
+          website: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          founder: string
+          id?: string
+          location: string
+          phone: string
+          tagline: string
+          updated_at?: string
+          website: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          founder?: string
+          id?: string
+          location?: string
+          phone?: string
+          tagline?: string
+          updated_at?: string
+          website?: string
+        }
+        Relationships: []
+      }
+      website_settings_audit: {
+        Row: {
+          actor_email: string
+          actor_id: string | null
+          actor_name: string
+          changes: Json
+          created_at: string
+          id: string
+        }
+        Insert: {
+          actor_email: string
+          actor_id?: string | null
+          actor_name: string
+          changes: Json
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          actor_email?: string
+          actor_id?: string | null
+          actor_name?: string
+          changes?: Json
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_settings_audit_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
