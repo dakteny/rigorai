@@ -46,6 +46,7 @@ import {
   readNotification,
 } from "@/lib/platform.functions";
 import { providers, templates } from "@/lib/catalog";
+import { providerLogos } from "@/lib/provider-logos";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 const nav = [
@@ -1044,7 +1045,15 @@ export function Integrations() {
             return (
               <article className="service-card" key={p}>
                 <div className="flex justify-between items-center">
-                  <span className="service-icon font-bold">{p.slice(0, 1)}</span>
+                  <span className="flex size-12 shrink-0 items-center justify-center rounded-md bg-foreground p-2">
+                    <img
+                      src={providerLogos[p]}
+                      alt={`${p} logo`}
+                      className="size-full object-contain"
+                      width={32}
+                      height={32}
+                    />
+                  </span>
                   <span className={`status ${connected ? "active" : ""}`}>
                     {connected ? "Connected" : "Not connected"}
                   </span>

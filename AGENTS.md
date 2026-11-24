@@ -43,3 +43,4 @@ use the editor.
 - Public footer settings load through a public-read query; administrator settings updates use user-scoped access and a database trigger atomically records immutable actor snapshots and before/after values.
 - Keep RLS account-status helpers in an unexposed application schema; combine owner/active-account policies with column grants so editable profiles and notifications cannot alter protected status or system fields.
 - Preserve only a recovery UI hint before bearer middleware consumes the callback hash; validate the live user, keep tokens out of storage/artifacts, and clear the hint on completion or sign-out.
+- Keep known integration brand artwork in a static provider-to-asset map; CDN asset pointers avoid runtime logo lookup credentials.
