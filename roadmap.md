@@ -1,4 +1,5 @@
 # Rigor AI
+- [ ] Tighten row-level rules and table permissions for private records, website settings and audit history; verify customer isolation.
 - [ ] Add persisted website contact settings and administrator-only audit history with actor, changes and time.
 - [ ] Give verified administrators Free, Pro and Business plan access without fabricated payment state.
 - [ ] Make registration-to-login switching reliable and verify new-user account access.
