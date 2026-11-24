@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireActiveAccount as requireSupabaseAuth } from "./account-middleware";
 import { contactSchema, workflowSchema, agentSchema } from "./validation";
+import { adminRecordSchema, adminRoleSchema, assertAdministrator, assertAccountChange } from "./admin-rules";
 export const workspace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -251,23 +252,28 @@ export const adminData = createServerFn({ method: "GET" })
       _user_id: context.userId,
       _role: "admin",
     });
-    if (role.error || !role.data) throw new Error("Administrator access required");
-    const [users, contacts, executions, automations, activity] = await Promise.all([
-      context.supabase.from("profiles").select("*").limit(500),
-      context.supabase
+    assertAdministrator(!role.error && role.data === true);
+    const { supabaseAdmin: s } = await import("@/integrations/supabase/client.server");
+    const [users, contacts, executions, automations, activity, agents, integrations, subscriptions, roles] = await Promise.all([
+      s.from("profiles").select("*").order("created_at", { ascending: false }).limit(500),
+      s
         .from("contact_messages")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(100),
-      context.supabase.from("automation_executions").select("*").limit(500),
-      context.supabase.from("automations").select("*").limit(500),
-      context.supabase
+      s.from("automation_executions").select("*").order("started_at", { ascending: false }).limit(500),
+      s.from("automations").select("*").order("created_at", { ascending: false }).limit(500),
+      s
         .from("activity_logs")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(100),
+      s.from("ai_agents").select("*").order("created_at", { ascending: false }).limit(500),
+      s.from("integrations").select("*").order("created_at", { ascending: false }).limit(500),
+      s.from("subscriptions").select("*").order("created_at", { ascending: false }).limit(500),
+      s.from("user_roles").select("user_id, role"),
     ]);
-    for (const r of [users, contacts, executions, automations, activity])
+    for (const r of [users, contacts, executions, automations, activity, agents, integrations, subscriptions, roles])
       if (r.error) throw new Error(r.error.message);
     return {
       users: users.data ?? [],
@@ -275,6 +281,10 @@ export const adminData = createServerFn({ method: "GET" })
       executions: executions.data ?? [],
       automations: automations.data ?? [],
       activity: activity.data ?? [],
+      agents: agents.data ?? [],
+      integrations: integrations.data ?? [],
+      subscriptions: subscriptions.data ?? [],
+      roles: roles.data ?? [],
     };
   });
 export const setAccountState = createServerFn({ method: "POST" })
@@ -285,13 +295,15 @@ export const setAccountState = createServerFn({ method: "POST" })
       _user_id: context.userId,
       _role: "admin",
     });
-    if (role.error || !role.data) throw new Error("Administrator access required");
-    if (data.id === context.userId) throw new Error("You cannot disable your own account");
+    assertAdministrator(!role.error && role.data === true);
+    const targetRole = await context.supabase.rpc("has_role", { _user_id: data.id, _role: "admin" });
+    if (targetRole.error) throw new Error("Could not verify account access");
+    assertAccountChange(context.userId, data.id, targetRole.data === true, data.disabled);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const r = await supabaseAdmin
       .from("profiles")
       .update({ disabled: data.disabled })
-      .eq("id", data.id);
+      .eq("id", data.id).select("id").single();
     if (r.error) throw new Error(r.error.message);
     await supabaseAdmin
       .from("activity_logs")
@@ -300,5 +312,42 @@ export const setAccountState = createServerFn({ method: "POST" })
         action: "account_state",
         description: `Account ${data.id} ${data.disabled ? "disabled" : "enabled"}`,
       });
+    return { ok: true };
+  });
+
+export const grantAdminRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(adminRoleSchema)
+  .handler(async ({ data, context }) => {
+    const role = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    assertAdministrator(!role.error && role.data === true);
+    assertAccountChange(context.userId, data.id, false, false);
+    const { supabaseAdmin: s } = await import("@/integrations/supabase/client.server");
+    const profile = await s.from("profiles").select("disabled").eq("id", data.id).single();
+    if (profile.error || !profile.data || profile.data.disabled) throw new Error("Enable this account before granting access");
+    const existing = await s.from("user_roles").select("id").eq("user_id", data.id).eq("role", data.role);
+    if (existing.error) throw new Error(existing.error.message);
+    if (existing.data.length) return { ok: true };
+    const result = await s.from("user_roles").insert({ user_id: data.id, role: data.role });
+    if (result.error) throw new Error(result.error.message);
+    const log = await s.from("activity_logs").insert({ user_id: context.userId, action: "access_granted", description: `Granted ${data.role} access to account ${data.id}` });
+    if (log.error) throw new Error("Access granted, but activity could not be saved. Refresh before retrying.");
+    return { ok: true };
+  });
+
+export const adminSaveRecord = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(adminRecordSchema)
+  .handler(async ({ data, context }) => {
+    const role = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    assertAdministrator(!role.error && role.data === true);
+    const { supabaseAdmin: s } = await import("@/integrations/supabase/client.server");
+    const changes = { name: data.name, description: data.description, status: data.status };
+    const result = data.kind === "workflow"
+      ? await s.from("automations").update(changes).eq("id", data.id).select("id").single()
+      : await s.from("ai_agents").update({ ...changes, instructions: data.instructions ?? "" }).eq("id", data.id).select("id").single();
+    if (result.error) throw new Error(result.error.message);
+    const log = await s.from("activity_logs").insert({ user_id: context.userId, action: "admin_record_updated", description: `Updated ${data.kind} ${data.id}` });
+    if (log.error) throw new Error("Changes saved, but activity could not be saved. Refresh before retrying.");
     return { ok: true };
   });

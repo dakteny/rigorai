@@ -1,4 +1,6 @@
 # Rigor AI
+- [ ] Expand website-wide admin management and verify administrator/customer boundaries.
+- [ ] Grant dakteny667@gmail.com administrator access and verify the owner can open administration.
 - [x] Replace the site logo and favicon with the supplied Rigor AI image; desktop/mobile rendering verified.
 - [x] Add repeatable real-auth browser checks; 6 desktop/mobile login, recovery-password and private-access checks passed; mobile logout scrolling fixed.
 - [ ] Run the added sign-up and recovery-email checks — controlled plus-addressable test inbox not supplied; email delivery remains unverified.
