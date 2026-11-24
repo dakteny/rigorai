@@ -85,7 +85,7 @@ export function Plans() {
               </li>
             ))}
           </ul>
-          <Button variant={p.name === "Pro" ? "brand" : "outline"} asChild>
+          <Button variant="brand" asChild>
             {isAdmin ? (
               <Link to="/billing">
                 Open {p.name} access <ArrowUpRight />
