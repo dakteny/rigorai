@@ -35,6 +35,7 @@ const paths = [
 let admin: ReturnType<typeof backend>;
 let publicClient: ReturnType<typeof backend>;
 let accountId: string | undefined;
+let extraAccountId: string | undefined;
 let email = "";
 let password = "";
 
@@ -65,6 +66,7 @@ test.describe("Real account lifecycle", () => {
     admin = backend(secret);
     publicClient = backend(key);
     accountId = undefined;
+    extraAccountId = undefined;
     email = "";
     const inbox = process.env["E2E_EMAIL_ADDRESS"];
     const needsInbox =
@@ -96,6 +98,14 @@ test.describe("Real account lifecycle", () => {
     }
   });
   test.afterEach(async () => {
+    // A separate teardown cleans this test's customer even if a timeout interrupts finally.
+    if (extraAccountId) {
+      await admin.from("automations").delete().eq("user_id", extraAccountId);
+      await admin.from("ai_agents").delete().eq("user_id", extraAccountId);
+      const removed = await admin.auth.admin.deleteUser(extraAccountId);
+      if (removed.error) throw new Error("Isolated customer cleanup failed");
+      extraAccountId = undefined;
+    }
     // Only delete this suite's unique account, even if signup partially failed.
     if (!email) return;
     const id = accountId ?? (await locateCreatedAccount());
@@ -236,6 +246,161 @@ test.describe("Real account lifecycle", () => {
     ).toBe(true);
     await page.goto("/admin");
     await expect(page.getByRole("heading", { name: "Platform overview." })).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "This page didn't load" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Access restricted" })).toBeVisible();
+  });
+  test("administrator manages another customer's records and protects privileged access", async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    page.setDefaultTimeout(15_000);
+    if (!accountId) throw new Error("Isolated admin account not available");
+    const elevated = await admin.from("user_roles").insert({ user_id: accountId, role: "admin" });
+    if (elevated.error) throw new Error("Unable to elevate the isolated test account");
+    const customer = await admin.auth.admin.createUser({
+      email: `rigor-customer-${randomUUID()}@example.com`,
+      password: `Rigor-${randomUUID()}-9!`,
+      email_confirm: true,
+      user_metadata: { full_name: "Isolated customer" },
+    });
+    if (customer.error) throw new Error("Unable to provision the isolated customer");
+    const customerId = customer.data.user.id;
+    extraAccountId = customerId;
+    let workflowId: string | undefined;
+    let agentId: string | undefined;
+    try {
+      const workflow = await admin
+        .from("automations")
+        .insert({
+          user_id: customerId,
+          name: `Admin workflow ${randomUUID()}`,
+          status: "draft",
+        })
+        .select("id, name")
+        .single();
+      if (workflow.error || !workflow.data) throw new Error("Unable to create isolated workflow");
+      workflowId = workflow.data.id;
+      const agent = await admin
+        .from("ai_agents")
+        .insert({
+          user_id: customerId,
+          name: `Admin agent ${randomUUID()}`,
+          instructions: "Assist with customer support",
+          status: "inactive",
+        })
+        .select("id, name")
+        .single();
+      if (agent.error || !agent.data) throw new Error("Unable to create isolated agent");
+      agentId = agent.data.id;
+      await signIn(page);
+      let adminEndpoint = "";
+      page.on("request", (request) => {
+        if (
+          request.url().includes("/_serverFn/") &&
+          request.method() === "GET" &&
+          request.url().includes("YWRtaW5EYXRh")
+        )
+          adminEndpoint = request.url();
+      });
+      await page.goto("/admin");
+      await expect(page.getByRole("heading", { name: "Platform overview." })).toBeVisible();
+      await expect(page.getByText("Administrator · Full platform access")).toBeVisible();
+      await page.getByRole("tab", { name: "Workflows", exact: true }).click();
+      await page.getByLabel("Search workflows").fill(workflow.data.name);
+      await page.getByRole("button", { name: `Edit ${workflow.data.name}`, exact: true }).click();
+      await page.getByLabel("Name", { exact: true }).fill("Reviewed customer workflow");
+      await page.getByLabel("Configuration status").selectOption("paused");
+      await page.getByRole("button", { name: "Save changes", exact: true }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await page.getByLabel("Search workflows").fill("Reviewed customer workflow");
+      await expect(page.getByRole("heading", { name: "Reviewed customer workflow" })).toBeVisible();
+      const saved = await admin
+        .from("automations")
+        .select("name, status, user_id")
+        .eq("id", workflowId)
+        .single();
+      expect(saved.data?.status).toBe("paused");
+      expect(saved.data?.user_id).toBe(customerId);
+      await page.reload();
+      await page.getByRole("tab", { name: "Workflows", exact: true }).click();
+      await page.getByLabel("Search workflows").fill("Reviewed customer workflow");
+      await expect(page.getByRole("heading", { name: "Reviewed customer workflow" })).toBeVisible();
+      await page.getByRole("tab", { name: "AI Agents", exact: true }).click();
+      await page.getByLabel("Search ai agents").fill(agent.data.name);
+      await page.getByRole("button", { name: `Edit ${agent.data.name}`, exact: true }).click();
+      await page
+        .getByRole("textbox", { name: "Instructions", exact: true })
+        .fill("Escalate billing requests to the support team.");
+      await page.getByRole("button", { name: "Save changes", exact: true }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      const savedAgent = await admin
+        .from("ai_agents")
+        .select("instructions")
+        .eq("id", agentId)
+        .single();
+      expect(savedAgent.data?.instructions).toBe("Escalate billing requests to the support team.");
+      await page.getByRole("tab", { name: "Users", exact: true }).click();
+      await page.getByLabel("Search users").fill(customer.data.user.email ?? "");
+      const row = page.locator("article").filter({ hasText: customer.data.user.email ?? "" });
+      await row.getByRole("button", { name: "Disable account", exact: true }).click();
+      await page.getByRole("button", { name: "Confirm", exact: true }).click();
+      await expect(row.getByRole("button", { name: "Enable account", exact: true })).toBeVisible();
+      const disabled = await admin
+        .from("profiles")
+        .select("disabled")
+        .eq("id", customerId)
+        .single();
+      expect(disabled.data?.disabled).toBe(true);
+      await row.getByRole("button", { name: "Enable account", exact: true }).click();
+      await page.getByRole("button", { name: "Confirm", exact: true }).click();
+      await expect(row.getByRole("button", { name: "Disable account", exact: true })).toBeVisible();
+      await row.getByRole("button", { name: "Grant staff", exact: true }).click();
+      await page.getByRole("button", { name: "Confirm", exact: true }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      const staff = await admin.from("user_roles").select("role").eq("user_id", customerId);
+      expect(staff.data?.some((r) => r.role === "staff")).toBe(true);
+      await page.getByRole("tab", { name: "Website", exact: true }).click();
+      await page.getByRole("link", { name: "Services", exact: true }).click();
+      await expect(page).toHaveURL(/\/services$/);
+      await page.goto("/admin");
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+      // An ordinary customer cannot invoke the admin endpoint directly, even without the UI guard.
+      const customerPassword = `Rigor-${randomUUID()}-9!`;
+      const updated = await admin.auth.admin.updateUserById(customerId, {
+        password: customerPassword,
+      });
+      if (updated.error) throw new Error("Unable to set isolated customer password");
+      const customerSession = await publicClient.auth.signInWithPassword({
+        email: customer.data.user.email ?? "",
+        password: customerPassword,
+      });
+      if (customerSession.error || !customerSession.data.session || !adminEndpoint)
+        throw new Error("Unable to verify direct endpoint protection");
+      const denial = await page.evaluate(
+        async ({ url, token }) => {
+          const response = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "x-tsr-serverfn": "true",
+              Accept: "application/x-tss-framed",
+            },
+          });
+          const body = await response.text();
+          return {
+            rejected: body.includes("Administrator access required"),
+            status: response.status,
+          };
+        },
+        { url: adminEndpoint, token: customerSession.data.session.access_token },
+      );
+      expect(denial.rejected).toBe(true);
+    } finally {
+      if (workflowId) await admin.from("automations").delete().eq("id", workflowId);
+      if (agentId) await admin.from("ai_agents").delete().eq("id", agentId);
+      const removed = await admin.auth.admin.deleteUser(customerId);
+      if (removed.error) throw new Error("Isolated customer cleanup failed");
+      extraAccountId = undefined;
+    }
   });
 });

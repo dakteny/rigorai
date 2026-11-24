@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { adminRecordSchema, adminRoleSchema, assertAccountChange, assertAdministrator } from "@/lib/admin-rules";
+import {
+  adminRecordSchema,
+  adminRoleSchema,
+  assertAccountChange,
+  assertAdministrator,
+} from "@/lib/admin-rules";
 
 describe("Website-wide administrator permissions", () => {
   it("requires a verified administrator for privileged access", () => {
@@ -19,6 +24,14 @@ describe("Website-wide administrator permissions", () => {
     expect(adminRoleSchema.safeParse({ id, role: "owner" }).success).toBe(false);
   });
   it("cannot fabricate successful executions through admin editing", () => {
-    expect(adminRecordSchema.safeParse({ id: "00000000-0000-4000-8000-000000000001", kind: "workflow", name: "Workflow", description: "", status: "completed" }).success).toBe(false);
+    expect(
+      adminRecordSchema.safeParse({
+        id: "00000000-0000-4000-8000-000000000001",
+        kind: "workflow",
+        name: "Workflow",
+        description: "",
+        status: "completed",
+      }).success,
+    ).toBe(false);
   });
 });

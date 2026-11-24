@@ -15,7 +15,7 @@ function About() {
     <Site>
       <section className="section site-container">
         <Intro
-          eyebrow="About Rigor AI"
+          eyebrow={<span className="[word-spacing:0.25em]">ABOUT RIGOR AI</span>}
           title="Human ambition. Intelligent automation."
           description="We believe technology should give people their time back. Rigor AI brings AI-powered workflows, specialized agents, and application integrations into one connected workspace."
         />

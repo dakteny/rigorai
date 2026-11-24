@@ -94,6 +94,39 @@ export function Site({ children }: { children: ReactNode }) {
               Intelligent Automation. Real Results.
             </p>
           </div>
+          <address className="not-italic grid gap-2 text-xs text-muted-foreground max-w-md">
+            <p>
+              <span className="text-footer-accent font-semibold">Founder:</span> Gatlena Banguot —
+              Founder &amp; AI Automation Specialist
+            </p>
+            <p>
+              <span className="text-footer-accent font-semibold">Location:</span> Halifax, Nova
+              Scotia, Canada
+            </p>
+            <p>
+              <span className="text-footer-accent font-semibold">Website:</span>{" "}
+              <a
+                className="hover:text-foreground"
+                href="https://www.RigorEx.ca"
+                target="_blank"
+                rel="noreferrer"
+              >
+                www.RigorEx.ca
+              </a>
+            </p>
+            <p>
+              <span className="text-footer-accent font-semibold">Email:</span>{" "}
+              <a className="hover:text-foreground" href="mailto:hello@rigorex.ca">
+                hello@rigorex.ca
+              </a>
+            </p>
+            <p>
+              <span className="text-footer-accent font-semibold">Phone:</span>{" "}
+              <a className="hover:text-foreground" href="tel:+19022108363">
+                +1 (902) 210-8363
+              </a>
+            </p>
+          </address>
           <div className="flex flex-wrap gap-6 text-xs text-muted-foreground">
             <Link to="/about">About</Link>
             <Link to="/services">Solutions</Link>
@@ -111,7 +144,7 @@ export function Intro({
   title,
   description,
 }: {
-  eyebrow: string;
+  eyebrow: ReactNode;
   title: string;
   description: string;
 }) {

@@ -56,6 +56,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-footer-accent: var(--footer-accent);
   --color-ring-offset-background: var(--background);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -74,6 +75,7 @@
 
 :root {
   --radius: 0.5rem;
+  --footer-accent: oklch(0.82 0.1 240);
   --background: oklch(0.135 0.022 270);
   --foreground: oklch(0.97 0.006 270);
   --card: oklch(0.175 0.025 270);
@@ -109,6 +111,7 @@
 }
 
 .dark {
+  --footer-accent: oklch(0.82 0.1 240);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
