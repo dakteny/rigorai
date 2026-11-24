@@ -133,6 +133,9 @@ test.describe("Real account lifecycle", () => {
       "Check your email to confirm your account",
     );
     await expect(page).toHaveURL(/\/auth\?mode=signup$/);
+    await page.getByRole("link", { name: "Back to sign in", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Log in", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Full name", { exact: true })).toHaveCount(0);
     accountId = await locateCreatedAccount();
     expect(Boolean(accountId), "Sign-up must create a real Auth user").toBe(true);
     if (!accountId) throw new Error("Sign-up did not create an isolated account.");
@@ -149,6 +152,30 @@ test.describe("Real account lifecycle", () => {
     // Confirm only this user, never change hosted auth settings.
     const confirmed = await admin.auth.admin.updateUserById(accountId, { email_confirm: true });
     if (confirmed.error) throw new Error("Unable to confirm the isolated test account.");
+    await signIn(page);
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Welcome, Rigor." })).toBeVisible();
+  });
+  test("registration and login switching clears old errors and credentials", async ({ page }) => {
+    await page.goto("/auth?mode=login");
+    await page.getByLabel("Email address", { exact: true }).fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(`${password}-wrong`);
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    await expect(page.getByRole("alert")).toBeVisible();
+    await page.getByRole("link", { name: "Create an account", exact: true }).click();
+    await expect(page).toHaveURL(/\/auth\?mode=signup$/);
+    await expect(page.getByRole("alert")).toHaveCount(0);
+    await page.getByLabel("Full name", { exact: true }).fill("A new customer");
+    await page.getByLabel("Email address", { exact: true }).fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.locator(".auth-panel").getByRole("link", { name: "Log in", exact: true }).click();
+    await expect(page.getByLabel("Full name", { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
+    await page.getByLabel("Email address", { exact: true }).fill(email);
+    await page.getByLabel("Password", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Log in", exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.getByRole("heading", { name: "Welcome, Rigor." })).toBeVisible();
   });
   test("sign-in validates credentials, survives reload, and logout removes private access", async ({
     page,

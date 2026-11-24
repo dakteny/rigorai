@@ -38,3 +38,4 @@ use the editor.
 - Run auth browser checks against real Supabase with unique disposable customer accounts; credentials stay in the test runner and cleanup never touches existing accounts.
 - Disable traces, videos and automatic screenshots in auth tests because recovery URLs and entered credentials are secret.
 - Website-wide admin reads and record changes use role-verified server handlers; elevated access is additive and administrators cannot disable themselves or other administrators to prevent lockout.
+- Mount a fresh auth form for each registration/login/recovery mode so success messages, errors and passwords never persist when switching modes.

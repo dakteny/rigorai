@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { pageHead } from "@/lib/metadata";
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { mode: "signup" | "forgot" | "login" } => ({
     mode: s["mode"] === "signup" ? "signup" : s["mode"] === "forgot" ? "forgot" : "login",
   }),
   head: () =>
@@ -15,6 +15,9 @@ export const Route = createFileRoute("/auth")({
 });
 function Auth() {
   const { mode } = Route.useSearch();
+  return <AuthForm key={mode} mode={mode} />;
+}
+function AuthForm({ mode }: { mode: "signup" | "forgot" | "login" }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -31,7 +34,7 @@ function Auth() {
     setError("");
     setMessage("");
     const f = new FormData(e.currentTarget);
-    const email = String(f.get("email"));
+    const email = String(f.get("email")).trim();
     const password = String(f.get("password") ?? "");
     try {
       if (mode === "forgot") {
@@ -45,7 +48,7 @@ function Auth() {
           email,
           password,
           options: {
-            data: { full_name: String(f.get("name")) },
+            data: { full_name: String(f.get("name")).trim() },
             emailRedirectTo: window.location.origin,
           },
         });
@@ -70,9 +73,9 @@ function Auth() {
           <span className="eyebrow">Your next chapter</span>
           <h1 className="section-title">
             {mode === "signup"
-              ? "Make room for more."
+              ? "Create your account."
               : mode === "forgot"
-                ? "Let’s get you back in."
+                ? "Reset your password."
                 : "Welcome back."}
           </h1>
           <p className="section-copy mb-8">

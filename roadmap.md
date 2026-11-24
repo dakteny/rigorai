@@ -1,4 +1,8 @@
 # Rigor AI
+- [ ] Add persisted website contact settings and administrator-only audit history with actor, changes and time.
+- [ ] Give verified administrators Free, Pro and Business plan access without fabricated payment state.
+- [ ] Make registration-to-login switching reliable and verify new-user account access.
+- [ ] Verify a real registration confirmation email — awaiting an approved test inbox.
 - [x] Update the About heading to “ABOUT RIGOR AI”; word spacing verified on desktop/mobile.
 - [x] Change footer contact labels from green to light blue; desktop/mobile screenshots verified.
 - [x] Recreate the supplied footer contact details as readable text and working contact links.
