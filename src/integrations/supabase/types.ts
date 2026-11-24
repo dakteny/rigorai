@@ -526,6 +526,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      rigor_active_account: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "staff" | "customer"
