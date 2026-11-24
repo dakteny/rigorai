@@ -110,7 +110,7 @@ export const planAmounts = { Free: 0, Pro: 50, Business: 100 } as const;
 export const planCurrency = "USD";
 export const planBillingInterval = "month";
 export function planPriceLabel(plan: keyof typeof planAmounts) {
-  return `US$${planAmounts[plan]}${plan === "Free" ? "" : "/month"}`;
+  return `${planAmounts[plan]}$${plan === "Free" ? "" : "/month"}`;
 }
 export const templates = [
   "Welcome new customers",

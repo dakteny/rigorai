@@ -76,7 +76,7 @@ export function Plans() {
       ].map((p) => (
         <article className="service-card" key={p.name}>
           <span className="eyebrow">{p.name}</span>
-          <h3 className="text-3xl">{p.price.replace("US$", "$")}</h3>
+          <h3 className="text-3xl">{p.price}</h3>
           {isAdmin && <span className="text-xs text-success">Administrator access</span>}
           <p>{p.caption}</p>
           <ul className="space-y-4 my-8">
