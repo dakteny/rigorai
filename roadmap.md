@@ -1,4 +1,6 @@
 # Rigor AI
+- [ ] Replace the site logo and favicon with the supplied Rigor AI image.
+- [ ] Add and run repeatable browser checks for sign-up, sign-in, password recovery and private workspace access using isolated test accounts.
 - [x] Public home, services, about, pricing readiness, persisted contact.
 - [x] Account screens, private profiles, password recovery and avatar storage.
 - [x] Database-backed private dashboard, workflow CRUD/history, AI agent CRUD/testing/history.

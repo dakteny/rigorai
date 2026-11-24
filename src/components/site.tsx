@@ -1,19 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Cpu, Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
+import logo from '@/assets/rigor-logo.asset.json';
 import { useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 export function Brand() {
   return (
-    <Link to="/" className="brand">
-      <span className="brand-mark">
-        <Cpu size={34} />
-      </span>
-      <span>
-        rigor<span className="text-electric">ai</span>
-        <span className="text-electric">.</span>
-      </span>
+    <Link to="/" className="brand" aria-label="Rigor AI home">
+      <img src={logo.url} className="brand-logo" alt="Rigor AI — Precision Automation" />
     </Link>
   );
 }

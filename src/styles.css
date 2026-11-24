@@ -209,6 +209,7 @@
   place-items: center;
   color: var(--electric);
 }
+.brand-logo { width: 88px; height: 75px; object-fit: contain; flex-shrink: 0; }
 .nav-links {
   display: flex;
   gap: 30px;
@@ -444,6 +445,7 @@
   padding: 28px 18px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 .dash-link {
   display: flex;

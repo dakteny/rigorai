@@ -35,3 +35,5 @@ use the editor.
 - Store roles separately from editable profiles; execution and payment records are server-write-only to prevent fabricated results.
 - Keep server functions in `src/lib/platform.functions.ts` and shared workspace query options separate; page loaders preload the same query used by workspace views.
 - Unconfigured external services must expose configuration-required states rather than simulated execution, connection or payment success.
+- Run auth browser checks against real Supabase with unique disposable customer accounts; credentials stay in the test runner and cleanup never touches existing accounts.
+- Disable traces, videos and automatic screenshots in auth tests because recovery URLs and entered credentials are secret.
