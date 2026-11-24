@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { websiteSettingsOptions } from "@/lib/website-settings-query";
+import { recoveryIntentKey } from "@/lib/recovery-intent";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -139,7 +140,12 @@ function RootComponent() {
   const router = useRouter();
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        window.sessionStorage.setItem(recoveryIntentKey, "pending");
+        return;
+      }
       if (!["SIGNED_IN", "SIGNED_OUT", "USER_UPDATED"].includes(event)) return;
+      if (event === "SIGNED_OUT") window.sessionStorage.removeItem(recoveryIntentKey);
       void router.invalidate();
       if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
     });

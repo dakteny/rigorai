@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Site } from "@/components/site";
 import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/metadata";
+import { isRecoveryHash, recoveryIntentKey } from "@/lib/recovery-intent";
 export const Route = createFileRoute("/reset-password")({
   head: () =>
     pageHead(
@@ -17,8 +18,25 @@ function Reset() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (window.location.hash.includes("type=recovery")) setValid(true);
-    else setMessage("Open the password recovery link from your email to continue.");
+    const requested =
+      isRecoveryHash(window.location.hash) ||
+      window.sessionStorage.getItem(recoveryIntentKey) === "pending";
+    if (!requested) {
+      setMessage("Open the password recovery link from your email to continue.");
+      return;
+    }
+    let active = true;
+    void supabase.auth.getUser().then(({ data, error }) => {
+      if (!active) return;
+      if (!error && data.user) setValid(true);
+      else {
+        window.sessionStorage.removeItem(recoveryIntentKey);
+        setMessage("This recovery link is invalid or expired. Request a new password reset link.");
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, []);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,7 +50,10 @@ function Reset() {
     setMessage(
       r.error ? r.error.message : "Password updated. You can now sign in with your new password.",
     );
-    if (!r.error) setValid(false);
+    if (!r.error) {
+      setValid(false);
+      window.sessionStorage.removeItem(recoveryIntentKey);
+    }
     setBusy(false);
   }
   return (

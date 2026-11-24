@@ -239,6 +239,10 @@ test.describe("Real account lifecycle", () => {
       window.location.href = target;
     }, url.href);
     const nextPassword = `Rigor-${randomUUID()}-8!`;
+    // A failed wait must not print a token-bearing URL in Playwright's navigation log.
+    await expect
+      .poll(async () => (await page.getByLabel("New password", { exact: true }).count()) > 0)
+      .toBe(true);
     await page.getByLabel("New password", { exact: true }).fill(nextPassword);
     await page.getByLabel("Confirm new password", { exact: true }).fill("mismatched-password");
     await page.getByRole("button", { name: "Update password", exact: true }).click();

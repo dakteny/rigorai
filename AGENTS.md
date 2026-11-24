@@ -41,3 +41,5 @@ use the editor.
 - Mount fresh forms for registration/login/recovery modes, use POST for credential forms, and enable submission only after hydration so state stays isolated and passwords never enter URLs.
 - Compute administrator plan access from server-read roles separately from subscription/payment records, so all-plan privileges never fabricate a paid entitlement.
 - Public footer settings load through a public-read query; administrator settings updates use user-scoped access and a database trigger atomically records immutable actor snapshots and before/after values.
+- Keep RLS account-status helpers in an unexposed application schema; combine owner/active-account policies with column grants so editable profiles and notifications cannot alter protected status or system fields.
+- Preserve only a recovery UI hint before bearer middleware consumes the callback hash; validate the live user, keep tokens out of storage/artifacts, and clear the hint on completion or sign-out.
