@@ -12,8 +12,9 @@ export function renderErrorPage(): string {
       p { color: #4b5563; margin: 0 0 1.5rem; }
       .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
       a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
-      .primary { background: #111; color: #fff; }
-      .secondary { background: #fff; color: #111; border-color: #d1d5db; }
+      .primary { background: linear-gradient(105deg, #a9dcf5, #6cb6e8 50%, #4a8fd8); color: #10233d; }
+      .secondary { background: linear-gradient(105deg, #a9dcf5, #6cb6e8 50%, #4a8fd8); color: #10233d; }
+      .primary:hover, .secondary:hover { filter: brightness(1.08); }
     </style>
   </head>
   <body>

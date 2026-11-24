@@ -173,14 +173,51 @@
   --success: oklch(0.76 0.16 160);
   --brand-gradient: linear-gradient(105deg, var(--electric), var(--primary) 50%, var(--violet));
   --brand-shadow: 0 8px 30px color-mix(in oklch, var(--primary) 23%, transparent);
+  --light-blue-1: oklch(0.88 0.08 208);
+  --light-blue-2: oklch(0.78 0.12 220);
+  --light-blue-3: oklch(0.68 0.15 238);
+  --light-blue-gradient: linear-gradient(
+    105deg,
+    var(--light-blue-1),
+    var(--light-blue-2) 50%,
+    var(--light-blue-3)
+  );
+  --light-blue-shadow: 0 8px 26px color-mix(in oklch, var(--light-blue-2) 32%, transparent);
+  --on-light-blue: oklch(0.24 0.06 250);
+  --danger-gradient: linear-gradient(105deg, oklch(0.72 0.19 25), oklch(0.58 0.23 15));
 }
-.brand-button {
-  background: var(--brand-gradient);
-  box-shadow: var(--brand-shadow);
-  color: var(--primary-foreground);
-}
-.brand-button:hover {
-  filter: brightness(1.15);
+/* Every button in the app paints with the light-blue gradient. */
+@layer components {
+  .brand-button {
+    background: var(--light-blue-gradient);
+    box-shadow: var(--light-blue-shadow);
+    color: var(--on-light-blue);
+  }
+  .brand-button:hover {
+    filter: brightness(1.08);
+  }
+  .danger-button {
+    background: var(--danger-gradient);
+    color: oklch(0.98 0.01 20);
+  }
+  .danger-button:hover {
+    filter: brightness(1.1);
+  }
+  .ghost-button {
+    color: var(--muted-foreground);
+  }
+  .ghost-button:hover {
+    background: var(--light-blue-gradient);
+    color: var(--on-light-blue);
+  }
+  .link-button {
+    background: var(--light-blue-gradient);
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .link-button:hover {
+    filter: brightness(1.15);
+  }
 }
 .gradient-text {
   background: var(--brand-gradient);
