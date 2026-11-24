@@ -1282,7 +1282,7 @@ export function Billing() {
       >
         {(data.planAccess.isAdministrator ? data.planAccess.plans : ["Pro", "Business"]).map(
           (p) => (
-            <article key={p} className="service-card plan-card">
+            <article key={p} className="service-card">
               <span className="eyebrow">{p}</span>
               <h3>
                 {data.planAccess.isAdministrator

@@ -447,36 +447,6 @@
   line-height: 1.9;
   color: var(--muted-foreground);
 }
-/* Free / Pro / Business plan rooms: light-blue gradient. */
-.plan-card {
-  background: var(--light-blue-gradient);
-  border-color: color-mix(in oklch, var(--light-blue-3) 55%, transparent);
-  color: var(--on-light-blue);
-  box-shadow: var(--light-blue-shadow);
-}
-.plan-card:hover {
-  border-color: color-mix(in oklch, var(--on-light-blue) 45%, transparent);
-}
-.plan-card .eyebrow {
-  color: color-mix(in oklch, var(--on-light-blue) 78%, transparent);
-}
-.plan-card h3 {
-  color: var(--on-light-blue);
-}
-.plan-card p {
-  color: color-mix(in oklch, var(--on-light-blue) 72%, transparent);
-}
-.plan-card li {
-  color: color-mix(in oklch, var(--on-light-blue) 88%, transparent);
-}
-.plan-card svg {
-  color: var(--on-light-blue);
-}
-.plan-card .brand-button {
-  box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--on-light-blue) 45%, transparent),
-    var(--light-blue-shadow);
-}
 .site-footer {
   padding: 40px 0;
   border-top: 1px solid var(--border);

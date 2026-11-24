@@ -72,7 +72,7 @@ export function Plans() {
           ],
         },
       ].map((p) => (
-        <article className="service-card plan-card" key={p.name}>
+        <article className="service-card" key={p.name}>
           <span className="eyebrow">{p.name}</span>
           <h3 className="text-3xl">{isAdmin ? "Included" : p.price}</h3>
           {isAdmin && <span className="text-xs text-success">Administrator access</span>}
