@@ -39,6 +39,7 @@ import { workspaceOptions } from "@/lib/workspace-query";
 import {
   saveWorkflow,
   deleteWorkflow,
+  runAutomation,
   saveAgent,
   deleteAgent,
   testAgent,
@@ -417,17 +418,32 @@ function Field({
     </label>
   );
 }
+function executionOutput(execution: Tables<"automation_executions">) {
+  const details = execution.execution_data;
+  if (!details || typeof details !== "object" || Array.isArray(details)) return "";
+  return typeof details["output"] === "string" ? details["output"] : "";
+}
+
 export function Automations() {
   const { data } = useSuspenseQuery(workspaceOptions);
   const query = useQueryClient();
   const save = useServerFn(saveWorkflow);
   const remove = useServerFn(deleteWorkflow);
+  const execute = useServerFn(runAutomation);
   const [editing, setEditing] = useState<Tables<"automations"> | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [history, setHistory] = useState<Tables<"automations"> | null>(null);
   const [deleting, setDeleting] = useState<Tables<"automations"> | null>(null);
+  const [running, setRunning] = useState<Tables<"automations"> | null>(null);
+  const [runBusy, setRunBusy] = useState(false);
+  const [runResult, setRunResult] = useState<{
+    ok: boolean;
+    executionId: string;
+    result?: string;
+    error?: string;
+  } | null>(null);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -461,6 +477,28 @@ export function Automations() {
       ? config["type"]
       : "Manual trigger";
   }
+  async function executeWorkflow(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!running) return;
+    setRunBusy(true);
+    setRunResult(null);
+    const form = new FormData(e.currentTarget);
+    try {
+      const result = await execute({
+        data: { id: running.id, input: String(form.get("input")) },
+      });
+      setRunResult(result);
+      await query.invalidateQueries({ queryKey: ["workspace"] });
+      if (result.ok) toast.success("n8n completed the automation.");
+      else toast.error(result.error ?? "The automation failed.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The automation could not run.";
+      setRunResult({ ok: false, executionId: "", error: message });
+      toast.error(message);
+    } finally {
+      setRunBusy(false);
+    }
+  }
   async function status(a: Tables<"automations">) {
     try {
       await save({
@@ -477,7 +515,7 @@ export function Automations() {
       toast.success(
         a.status === "active"
           ? "Workflow paused."
-          : "Configuration activated. Execution requires n8n connection.",
+          : "Configuration activated. Ready to run with n8n.",
       );
       await query.invalidateQueries({ queryKey: ["workspace"] });
     } catch (e) {
@@ -543,6 +581,19 @@ export function Automations() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className={`status ${a.status}`}>{a.status}</span>
+              {a.status === "active" && (
+                <Button
+                  variant="brand"
+                  size="sm"
+                  aria-label={`Run ${a.name}`}
+                  onClick={() => {
+                    setRunning(a);
+                    setRunResult(null);
+                  }}
+                >
+                  <Play /> Run
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -587,14 +638,15 @@ export function Automations() {
         ))
       )}
       <p className="text-xs text-muted-foreground mt-6">
-        Execution unavailable: n8n has not been connected.
+        Active workflows run through the configured n8n test webhook. Every real response or failure
+        is saved to execution history.
       </p>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit automation" : "Create automation"}</DialogTitle>
             <DialogDescription>
-              Define your workflow. Execution is available after n8n is connected.
+              Define your workflow, then activate it when you are ready to run it with n8n.
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={submit}>
@@ -682,6 +734,56 @@ export function Automations() {
         </DialogContent>
       </Dialog>
       <Dialog
+        open={!!running}
+        onOpenChange={(o) => {
+          if (!o && !runBusy) {
+            setRunning(null);
+            setRunResult(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Run {running?.name}</DialogTitle>
+            <DialogDescription>
+              Send this input to your n8n test webhook. In n8n, select Listen for test event before
+              running it.
+            </DialogDescription>
+          </DialogHeader>
+          <form key={running?.id} className="space-y-4" onSubmit={executeWorkflow}>
+            <label className="form-field">
+              Workflow input
+              <textarea
+                name="input"
+                className="field-control"
+                rows={6}
+                minLength={1}
+                maxLength={10000}
+                required
+                disabled={runBusy}
+                placeholder="Enter the information this automation should process…"
+              />
+            </label>
+            <Button variant="brand" disabled={runBusy}>
+              <Play /> {runBusy ? "Running…" : "Run Automation"}
+            </Button>
+          </form>
+          {runResult && (
+            <div role={runResult.ok ? "status" : "alert"} className="space-y-3">
+              <span className={`status ${runResult.ok ? "completed" : "failed"}`}>
+                {runResult.ok ? "completed" : "failed"}
+              </span>
+              {runResult.result && (
+                <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-background p-4 text-xs">
+                  {runResult.result}
+                </pre>
+              )}
+              {runResult.error && <p className="text-sm text-destructive">{runResult.error}</p>}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
         open={!!history}
         onOpenChange={(o) => {
           if (!o) setHistory(null);
@@ -694,7 +796,7 @@ export function Automations() {
           </DialogHeader>
           {data.executions.filter((e) => e.automation_id === history?.id).length === 0 ? (
             <p className="section-copy py-6">
-              No verified executions. Connect n8n to run this workflow.
+              No executions yet. Activate this workflow and select Run to send it to n8n.
             </p>
           ) : (
             data.executions
@@ -706,6 +808,11 @@ export function Automations() {
                     <p className="text-xs mt-3">{new Date(e.started_at).toLocaleString()}</p>
                     {e.error_message && (
                       <p className="text-xs text-destructive mt-2">{e.error_message}</p>
+                    )}
+                    {executionOutput(e) && (
+                      <pre className="mt-3 max-h-60 overflow-auto whitespace-pre-wrap break-words text-xs">
+                        {executionOutput(e)}
+                      </pre>
                     )}
                   </div>
                 </div>
@@ -1042,6 +1149,7 @@ export function Integrations() {
             const connected = data.integrations.some(
               (i) => i.provider === p && i.connection_status === "connected",
             );
+            const webhookConfigured = p === "n8n";
             return (
               <article className="service-card" key={p}>
                 <div className="flex justify-between items-center">
@@ -1055,15 +1163,27 @@ export function Integrations() {
                     />
                   </span>
                   <span className={`status ${connected ? "active" : ""}`}>
-                    {connected ? "Connected" : "Not connected"}
+                    {connected
+                      ? "Connected"
+                      : webhookConfigured
+                        ? "Webhook configured"
+                        : "Not connected"}
                   </span>
                 </div>
                 <h3>{p}</h3>
                 <p>Bring {p} into your connected automation workspace.</p>
-                <Button variant="brand" className="mt-5" onClick={() => setProvider(p)}>
-                  <Plug />
-                  {connected ? "Manage connection" : "Connect"}
-                </Button>
+                {webhookConfigured ? (
+                  <Button variant="brand" className="mt-5" asChild>
+                    <Link to="/automations">
+                      <Play /> Run automation
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="brand" className="mt-5" onClick={() => setProvider(p)}>
+                    <Plug />
+                    {connected ? "Manage connection" : "Connect"}
+                  </Button>
+                )}
               </article>
             );
           })}
@@ -1081,7 +1201,7 @@ export function Integrations() {
           </DialogHeader>
           <p className="section-copy">
             {provider === "n8n"
-              ? "The platform owner must connect n8n in Lovable before workflows can execute."
+              ? "The n8n test webhook is configured. Open My Automations to run an active workflow and verify its real response."
               : "Per-account authorization for this provider has not been configured. No connection or credentials have been saved."}
           </p>
           <Button variant="brand" asChild>
@@ -1187,7 +1307,7 @@ export function Activity() {
           <Empty
             icon={Workflow}
             title="No executions yet."
-            description="Only verified execution results appear here. Connect n8n to run workflows."
+            description="Run an active workflow to send it to n8n and save its real result here."
           />
         ) : (
           data.executions.map((e) => (
@@ -1200,6 +1320,11 @@ export function Activity() {
                   {new Date(e.started_at).toLocaleString()}
                 </p>
                 {e.error_message && <p className="text-xs text-destructive">{e.error_message}</p>}
+                {executionOutput(e) && (
+                  <pre className="mt-3 max-h-60 overflow-auto whitespace-pre-wrap break-words text-xs">
+                    {executionOutput(e)}
+                  </pre>
+                )}
               </div>
               <span className={`status ${e.execution_status}`}>{e.execution_status}</span>
             </div>
@@ -1278,43 +1403,45 @@ export function Billing() {
         </span>
       </div>
       <Button variant="brand" asChild>
-        <Link to="/dashboard">Open my workspace <ArrowUpRight /></Link>
+        <Link to="/dashboard">
+          Open my workspace <ArrowUpRight />
+        </Link>
       </Button>
       <div className="grid md:grid-cols-3 gap-6 mt-8">
-        {(["Free", "Pro", "Business"] as const).map(
-          (p) => (
-            <article key={p} className="service-card">
-              <span className="eyebrow">{p}</span>
-              <h3 className="text-3xl">{planPriceLabel(p)}</h3>
-              <h3>
-                {data.planAccess.isAdministrator
-                  ? "Included for administrators"
-                  : p === "Free"
-                    ? "Your private workspace"
+        {(["Free", "Pro", "Business"] as const).map((p) => (
+          <article key={p} className="service-card">
+            <span className="eyebrow">{p}</span>
+            <h3 className="text-3xl">{planPriceLabel(p)}</h3>
+            <h3>
+              {data.planAccess.isAdministrator
+                ? "Included for administrators"
+                : p === "Free"
+                  ? "Your private workspace"
                   : p === "Pro"
                     ? "More power. More possibility."
                     : "Intelligence at your scale."}
-              </h3>
-              <p>
-                {data.planAccess.isAdministrator
-                  ? "Administrator access included. External services still require configuration."
-                  : p === "Free"
-                    ? "Your saved workflows, AI agents and account activity. No payment required."
+            </h3>
+            <p>
+              {data.planAccess.isAdministrator
+                ? "Administrator access included. External services still require configuration."
+                : p === "Free"
+                  ? "Your saved workflows, AI agents and account activity. No payment required."
                   : "Paid subscriptions are not yet configured. No payment will be collected until secure payment verification is enabled."}
-              </p>
-              <Button variant="outline" className="mt-5" asChild>
-                <Link to={data.planAccess.isAdministrator || p === "Free" ? "/dashboard" : "/contact"}>
-                  {data.planAccess.isAdministrator || p === "Free"
-                    ? `Open ${p} access`
-                    : p === "Pro"
-                      ? "Join the waitlist"
-                      : "Contact sales"}
-                  <ArrowUpRight />
-                </Link>
-              </Button>
-            </article>
-          ),
-        )}
+            </p>
+            <Button variant="outline" className="mt-5" asChild>
+              <Link
+                to={data.planAccess.isAdministrator || p === "Free" ? "/dashboard" : "/contact"}
+              >
+                {data.planAccess.isAdministrator || p === "Free"
+                  ? `Open ${p} access`
+                  : p === "Pro"
+                    ? "Join the waitlist"
+                    : "Contact sales"}
+                <ArrowUpRight />
+              </Link>
+            </Button>
+          </article>
+        ))}
       </div>
     </WorkspaceShell>
   );
@@ -1484,7 +1611,7 @@ export function Support() {
           {[
             [
               "Why are there no executions?",
-              "Workflow configuration is separate from execution. The platform owner needs to connect n8n to run workflows and store verified results.",
+              "Only active workflows can run. Select Run on My Automations; n8n must be listening for a test event before you submit the workflow input.",
             ],
             [
               "How do I connect an integration?",

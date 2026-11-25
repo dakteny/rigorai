@@ -1,30 +1,44 @@
 # Rigor AI setup and readiness
 
 ## Implemented
+
 Public home, about, services, pricing, and persisted contact enquiries. Supabase email/password account screens, email-confirmation state, password recovery, private profiles and avatar storage. Private dashboard, workflow CRUD and visual trigger/action configuration, template drafts, AI agent CRUD, live server-side model testing and persisted conversation history. Activity, notifications, execution-derived analytics, billing readiness and administrator-only account/enquiry/monitoring screens.
 
 ## Account configuration
+
 This app uses your connected external Supabase project. In Supabase Authentication, enable email/password sign-in and configure the site URL and allowed redirect URLs for every app origin:
+
 - Preview: `https://id-preview--aff5aeb7-7c82-40e2-aab6-8df3bfbcffec.lovable.app`
 - Add the published app URL after publication.
 - For each origin allow `/` for confirmation and `/reset-password` for recovery.
-Keep email confirmation enabled. Test email delivery and recovery links outside the editor. Configure a production email sender. Leaked-password protection is disabled in the existing project; enable it before launch.
+  Keep email confirmation enabled. Test email delivery and recovery links outside the editor. Configure a production email sender. Leaked-password protection is disabled in the existing project; enable it before launch.
 
 ## Roles and permissions
+
 New accounts automatically receive customer permission. Roles live in protected `user_roles`, not editable profile metadata. Assign the first administrator using a trusted Supabase administration operation after identifying the account UUID; never add public role-selection controls. Staff currently have no additional privileges beyond their own records. Administrators can review accounts, messages, execution results and audit activity, and enable/disable application account access.
 Verified administrators have access across Free, Pro, and Business without purchasing a subscription. This does not create a paid subscription or configure unavailable external services.
 All public-schema tables have row-level access rules. Active customers can access their own private records; disabled customers cannot regain access by rewriting their profile. Editable profile columns are limited to name, avatar, and preferences; notifications permit only marking read. Roles, payment records, execution results, integrations, and audit records are not client-writable. Public contact settings remain readable, with administrator-only updates.
 
 ## Website settings and audit history
+
 Administration includes Website Settings for the existing footer founder, location, website, email, phone, and tagline. Each actual change atomically records the administrator's name/email, timestamp, and previous/new values. Audit Log shows the latest 100 changes and supports searching by actor and changed values. Audit records retain the actor snapshot if that account is deleted. Re-saving unchanged settings creates no false change record. Concurrent stale edits are rejected rather than overwriting another administrator's update.
 
 ## Runtime environment
+
 Browser configuration: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (managed by the existing integration).
 Server configuration: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY`.
 Never use server credentials in browser code. AI requests use the Lovable AI Gateway, with `openai/gpt-6-astra`, not a browser OpenAI key. Usage is subject to workspace availability and credits.
 
+## n8n automation execution
+
+Authenticated users can run only their own active workflows. The server derives the user identity from the validated session, validates the workflow and input, sends the request to n8n, and records the real result in `automation_executions`. Draft/paused workflows cannot run, execution records are not client-writable, and a 30-second timeout records a failed run. Inputs and returned outputs appear in the private execution history; avoid submitting secrets or unnecessary personal information.
+
+`N8N_WEBHOOK_URL` is stored as a server secret and currently points to the owner-supplied n8n **test** webhook. Before clicking Run Automation, open the n8n workflow and select **Listen for test event**; an inactive test listener returns a failed execution with recovery instructions. For production, activate the n8n workflow, replace the secret value with its `/webhook/` production URL, and publish the app. Optional Header Auth uses `N8N_WEBHOOK_SECRET` and `N8N_WEBHOOK_HEADER` (default `Authorization`) when those secrets are configured. No webhook URL or secret is exposed to browser code.
+
+This implementation uses synchronous webhook responses, not signed result callbacks. No custom per-account run limit has been added; the existing platform limits remain unchanged pending the owner's choice.
+
 ## External-service blockers
-- **n8n:** the connection was declined. Workflow configurations can be saved, activated and paused, but are not executed. Next step: connect n8n, discover its real workflow/webhook IDs, map configurations, and implement signed result callbacks and durable execution tracking. There is intentionally no endpoint pretending to run unavailable workflows.
+
 - **End-user integrations:** marketplace and disconnected states are present; per-user provider authorization, refresh/revocation and callback handling are not configured. Never reuse a workspace owner's connection as a customer's personal account.
 - **Stripe:** checkout, billing portal and verified subscription webhooks need payment configuration plus confirmed prices and entitlements. Paid tiers cannot be purchased and are never marked paid from a UI action.
 - **Limits:** custom shared request limiting was deferred by the owner for deployment review. Review abuse protection for the public contact endpoint and AI requests before launch.
@@ -32,6 +46,7 @@ Never use server credentials in browser code. AI requests use the Lovable AI Gat
 - **Testimonials:** not fabricated; supply approved customer testimonials to add them.
 
 ## Verification
+
 Validation/integrity tests and route tests live under `src/test/`. Run `bunx vitest run` for the suite.
 
 Real authentication browser checks live in `e2e/auth.spec.ts`. Run `bun run test:e2e` against the running app (default `http://localhost:8080`; override with `E2E_BASE_URL`). Use `bunx playwright install chromium` on a new development machine if Chromium is not installed. The test runner needs the server-only `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` from a secure environment. Do not put these values in source or browser settings.
@@ -45,5 +60,7 @@ The registration, login and recovery forms reset when switching between them. Af
 Credential forms use POST and login/signup submission waits for hydration. Recovery intent is preserved before public initial reads initialize Supabase Auth; the flag contains no tokens or permissions, the live user is validated, and the flag is cleared after completion or sign-out.
 
 Traces, videos and automatic screenshots are disabled to avoid saving credentials or recovery URLs. Reports go under `/tmp/browser/rigor-auth-e2e/`. Keep failure output private. `e2e/website-admin.spec.ts` covers all-plan admin access, real settings changes, public footer read-back, audit actor/time/diffs, no-op saves, and rejection of customer audit writes. `e2e/rls.spec.ts` verifies two-customer isolation, ownership-transfer denial, restricted profile/system writes, and disabled-account protection against the real database. Delivered-email confirmation/recovery and live AI verification remain separate launch checks.
+
+For the real n8n check, set `E2E_N8N=1` and run `bunx playwright test e2e/n8n.spec.ts --project=desktop`. This opt-in test creates a disposable account and active workflow, submits real input through the UI, and verifies that the returned status, output/error, ownership and private history match the stored execution. It never saves credentials, tokens, screenshots or traces. The real check passed for n8n's inactive-test-listener failure path; a successful n8n completion remains unverified until the workflow is listening for a test event.
 
 The platform is not production-ready until the outstanding configuration, abuse protection, and authenticated end-to-end checks are completed.

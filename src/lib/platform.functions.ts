@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireActiveAccount as requireSupabaseAuth } from "./account-middleware";
 import { contactSchema, workflowSchema, agentSchema } from "./validation";
 import { resolvePlanAccess } from "./plan-access";
+import { formatN8nOutput, n8nFailureMessage } from "./n8n-result";
 import { saveWebsiteSettingsSchema } from "./website-settings";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -129,6 +130,122 @@ export const deleteWorkflow = createServerFn({ method: "POST" })
     if (r.error) throw new Error(r.error.message);
     return { ok: true };
   });
+export const runAutomation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ id: z.uuid(), input: z.string().trim().min(1).max(10000) }))
+  .handler(async ({ data, context }) => {
+    const automationResult = await context.supabase
+      .from("automations")
+      .select("*")
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .single();
+    if (automationResult.error || !automationResult.data) throw new Error("Automation not found");
+    const automation = automationResult.data;
+    if (automation.status !== "active")
+      throw new Error("Activate this automation before running it.");
+
+    const webhookUrl = process.env["N8N_WEBHOOK_URL"];
+    if (!webhookUrl) throw new Error("n8n webhook execution is not configured.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const started = await supabaseAdmin
+      .from("automation_executions")
+      .insert({
+        user_id: context.userId,
+        automation_id: automation.id,
+        execution_status: "running",
+        execution_data: { provider: "n8n", input: data.input },
+      })
+      .select("id")
+      .single();
+    if (started.error || !started.data) throw new Error("The execution could not be started.");
+    const executionId = started.data.id;
+
+    async function finish(
+      executionStatus: "completed" | "failed",
+      output: string | null,
+      errorMessage: string | null,
+      httpStatus: number | null,
+    ) {
+      const updated = await supabaseAdmin
+        .from("automation_executions")
+        .update({
+          execution_status: executionStatus,
+          completed_at: new Date().toISOString(),
+          error_message: errorMessage,
+          execution_data: {
+            provider: "n8n",
+            input: data.input,
+            output,
+            http_status: httpStatus,
+          },
+        })
+        .eq("id", executionId)
+        .eq("user_id", context.userId);
+      if (updated.error)
+        throw new Error("n8n responded, but its execution result could not be saved.");
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    let response: Response;
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const webhookSecret = process.env["N8N_WEBHOOK_SECRET"];
+      if (webhookSecret) {
+        headers[process.env["N8N_WEBHOOK_HEADER"] ?? "Authorization"] = webhookSecret;
+      }
+      response = await fetch(webhookUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          source: "rigor-ai",
+          execution_id: executionId,
+          user_id: context.userId,
+          automation: {
+            id: automation.id,
+            name: automation.name,
+            description: automation.description,
+            category: automation.category,
+            trigger: automation.trigger_config,
+            action: automation.action_config,
+          },
+          input: data.input,
+          submitted_at: new Date().toISOString(),
+        }),
+        signal: controller.signal,
+        redirect: "manual",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.name === "AbortError"
+          ? "n8n did not respond within 30 seconds. Check the workflow and try again."
+          : "n8n could not be reached. Check the webhook URL and your n8n instance.";
+      await finish("failed", null, message, null);
+      return { ok: false, executionId, error: message };
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      const message = n8nFailureMessage(response.status, webhookUrl.includes("/webhook-test/"));
+      await finish("failed", null, message, response.status);
+      return { ok: false, executionId, error: message };
+    }
+
+    let output: string;
+    try {
+      output = formatN8nOutput((await response.text()).slice(0, 50000));
+    } catch {
+      const message = "The n8n response could not be read. Check the workflow response.";
+      await finish("failed", null, message, response.status);
+      return { ok: false, executionId, error: message };
+    }
+    await finish("completed", output, null, response.status);
+    return { ok: true, executionId, result: output };
+  });
+
 export const saveAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(agentSchema)

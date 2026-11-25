@@ -1,4 +1,5 @@
 # Rigor AI
+
 - [x] Ensure logout clears the session, cached private work, and sign-in email/password fields; real desktop/mobile checks passed.
 - [x] Verify dashboard and work ownership across all private records and same-browser account changes.
 - [x] Verify users cannot edit, delete, create, or transfer work belonging to another user.
@@ -23,7 +24,7 @@
 - [x] Integration marketplace/configuration states, notifications, execution-derived analytics, billing readiness, admin monitoring/account controls.
 - [x] Public contact persistence, signed-out route protection, mobile navigation, integrity tests and setup documentation.
 - [ ] Live workflow and AI launch verification — external execution setup and real AI validation still required.
-- [ ] Real n8n execution and signed result callbacks — connection was declined.
+- [ ] Verify a successful real n8n test-webhook run — secure execution, validation, timeout/error handling and private history are implemented; n8n must be listening for a test event.
 - [ ] Personal integration authorization — provider connections and per-user authorization setup missing.
 - [ ] Stripe checkout, portal, verified webhooks and paid entitlements — payment configuration, approved prices and limits missing.
 - [ ] Admin-editable services/plans — persisted catalog management not implemented; pricing/entitlement policy not supplied.
