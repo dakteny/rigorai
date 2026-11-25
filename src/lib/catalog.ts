@@ -103,7 +103,6 @@ export const providers = [
   "Facebook",
   "Instagram",
   "HubSpot",
-  "n8n",
   "OpenAI",
 ];
 export const planAmounts = { Free: 0, Pro: 50, Business: 100 } as const;

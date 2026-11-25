@@ -10,7 +10,6 @@ import wordpress from "@/assets/integration-wordpress.asset.json";
 import facebook from "@/assets/integration-facebook.asset.json";
 import instagram from "@/assets/integration-instagram.asset.json";
 import hubspot from "@/assets/integration-hubspot.asset.json";
-import n8n from "@/assets/integration-n8n.asset.json";
 import openai from "@/assets/integration-openai.asset.json";
 
 // Static brand artwork from SVGL; HubSpot artwork from Simple Icons.
@@ -27,6 +26,5 @@ export const providerLogos: Record<string, string> = {
   Facebook: facebook.url,
   Instagram: instagram.url,
   HubSpot: hubspot.url,
-  n8n: n8n.url,
   OpenAI: openai.url,
 };

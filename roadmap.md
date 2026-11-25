@@ -24,7 +24,6 @@
 - [x] Integration marketplace/configuration states, notifications, execution-derived analytics, billing readiness, admin monitoring/account controls.
 - [x] Public contact persistence, signed-out route protection, mobile navigation, integrity tests and setup documentation.
 - [ ] Live workflow and AI launch verification — external execution setup and real AI validation still required.
-- [ ] Verify a successful real n8n test-webhook run — secure execution, validation, timeout/error handling and private history are implemented; n8n must be listening for a test event.
 - [ ] Personal integration authorization — provider connections and per-user authorization setup missing.
 - [ ] Stripe checkout, portal, verified webhooks and paid entitlements — payment configuration, approved prices and limits missing.
 - [ ] Admin-editable services/plans — persisted catalog management not implemented; pricing/entitlement policy not supplied.

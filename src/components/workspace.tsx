@@ -39,7 +39,6 @@ import { workspaceOptions } from "@/lib/workspace-query";
 import {
   saveWorkflow,
   deleteWorkflow,
-  runAutomation,
   saveAgent,
   deleteAgent,
   testAgent,
@@ -429,21 +428,12 @@ export function Automations() {
   const query = useQueryClient();
   const save = useServerFn(saveWorkflow);
   const remove = useServerFn(deleteWorkflow);
-  const execute = useServerFn(runAutomation);
   const [editing, setEditing] = useState<Tables<"automations"> | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [history, setHistory] = useState<Tables<"automations"> | null>(null);
   const [deleting, setDeleting] = useState<Tables<"automations"> | null>(null);
-  const [running, setRunning] = useState<Tables<"automations"> | null>(null);
-  const [runBusy, setRunBusy] = useState(false);
-  const [runResult, setRunResult] = useState<{
-    ok: boolean;
-    executionId: string;
-    result?: string;
-    error?: string;
-  } | null>(null);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -477,28 +467,6 @@ export function Automations() {
       ? config["type"]
       : "Manual trigger";
   }
-  async function executeWorkflow(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!running) return;
-    setRunBusy(true);
-    setRunResult(null);
-    const form = new FormData(e.currentTarget);
-    try {
-      const result = await execute({
-        data: { id: running.id, input: String(form.get("input")) },
-      });
-      setRunResult(result);
-      await query.invalidateQueries({ queryKey: ["workspace"] });
-      if (result.ok) toast.success("n8n completed the automation.");
-      else toast.error(result.error ?? "The automation failed.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "The automation could not run.";
-      setRunResult({ ok: false, executionId: "", error: message });
-      toast.error(message);
-    } finally {
-      setRunBusy(false);
-    }
-  }
   async function status(a: Tables<"automations">) {
     try {
       await save({
@@ -515,7 +483,7 @@ export function Automations() {
       toast.success(
         a.status === "active"
           ? "Workflow paused."
-          : "Configuration activated. Ready to run with n8n.",
+          : "Workflow activated.",
       );
       await query.invalidateQueries({ queryKey: ["workspace"] });
     } catch (e) {
@@ -581,19 +549,6 @@ export function Automations() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className={`status ${a.status}`}>{a.status}</span>
-              {a.status === "active" && (
-                <Button
-                  variant="brand"
-                  size="sm"
-                  aria-label={`Run ${a.name}`}
-                  onClick={() => {
-                    setRunning(a);
-                    setRunResult(null);
-                  }}
-                >
-                  <Play /> Run
-                </Button>
-              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -638,15 +593,14 @@ export function Automations() {
         ))
       )}
       <p className="text-xs text-muted-foreground mt-6">
-        Active workflows run through the configured n8n test webhook. Every real response or failure
-        is saved to execution history.
+        Workflow execution is not connected yet. No runs are simulated.
       </p>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit automation" : "Create automation"}</DialogTitle>
             <DialogDescription>
-              Define your workflow, then activate it when you are ready to run it with n8n.
+              Define your workflow trigger and action.
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={submit}>
@@ -734,56 +688,6 @@ export function Automations() {
         </DialogContent>
       </Dialog>
       <Dialog
-        open={!!running}
-        onOpenChange={(o) => {
-          if (!o && !runBusy) {
-            setRunning(null);
-            setRunResult(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Run {running?.name}</DialogTitle>
-            <DialogDescription>
-              Send this input to your n8n test webhook. In n8n, select Listen for test event before
-              running it.
-            </DialogDescription>
-          </DialogHeader>
-          <form key={running?.id} className="space-y-4" onSubmit={executeWorkflow}>
-            <label className="form-field">
-              Workflow input
-              <textarea
-                name="input"
-                className="field-control"
-                rows={6}
-                minLength={1}
-                maxLength={10000}
-                required
-                disabled={runBusy}
-                placeholder="Enter the information this automation should process…"
-              />
-            </label>
-            <Button variant="brand" disabled={runBusy}>
-              <Play /> {runBusy ? "Running…" : "Run Automation"}
-            </Button>
-          </form>
-          {runResult && (
-            <div role={runResult.ok ? "status" : "alert"} className="space-y-3">
-              <span className={`status ${runResult.ok ? "completed" : "failed"}`}>
-                {runResult.ok ? "completed" : "failed"}
-              </span>
-              {runResult.result && (
-                <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-background p-4 text-xs">
-                  {runResult.result}
-                </pre>
-              )}
-              {runResult.error && <p className="text-sm text-destructive">{runResult.error}</p>}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-      <Dialog
         open={!!history}
         onOpenChange={(o) => {
           if (!o) setHistory(null);
@@ -796,7 +700,7 @@ export function Automations() {
           </DialogHeader>
           {data.executions.filter((e) => e.automation_id === history?.id).length === 0 ? (
             <p className="section-copy py-6">
-              No executions yet. Activate this workflow and select Run to send it to n8n.
+              No executions yet. Workflow execution is not connected.
             </p>
           ) : (
             data.executions
@@ -1149,7 +1053,6 @@ export function Integrations() {
             const connected = data.integrations.some(
               (i) => i.provider === p && i.connection_status === "connected",
             );
-            const webhookConfigured = p === "n8n";
             return (
               <article className="service-card" key={p}>
                 <div className="flex justify-between items-center">
@@ -1163,27 +1066,15 @@ export function Integrations() {
                     />
                   </span>
                   <span className={`status ${connected ? "active" : ""}`}>
-                    {connected
-                      ? "Connected"
-                      : webhookConfigured
-                        ? "Webhook configured"
-                        : "Not connected"}
+                    {connected ? "Connected" : "Not connected"}
                   </span>
                 </div>
                 <h3>{p}</h3>
                 <p>Bring {p} into your connected automation workspace.</p>
-                {webhookConfigured ? (
-                  <Button variant="brand" className="mt-5" asChild>
-                    <Link to="/automations">
-                      <Play /> Run automation
-                    </Link>
-                  </Button>
-                ) : (
                   <Button variant="brand" className="mt-5" onClick={() => setProvider(p)}>
                     <Plug />
                     {connected ? "Manage connection" : "Connect"}
                   </Button>
-                )}
               </article>
             );
           })}
@@ -1200,9 +1091,7 @@ export function Integrations() {
             <DialogDescription>Connection setup is required.</DialogDescription>
           </DialogHeader>
           <p className="section-copy">
-            {provider === "n8n"
-              ? "The n8n test webhook is configured. Open My Automations to run an active workflow and verify its real response."
-              : "Per-account authorization for this provider has not been configured. No connection or credentials have been saved."}
+            {"Per-account authorization for this provider has not been configured. No connection or credentials have been saved."}
           </p>
           <Button variant="brand" asChild>
             <Link to="/support">
@@ -1307,7 +1196,7 @@ export function Activity() {
           <Empty
             icon={Workflow}
             title="No executions yet."
-            description="Run an active workflow to send it to n8n and save its real result here."
+            description="Execution history appears here once workflow execution is connected."
           />
         ) : (
           data.executions.map((e) => (
@@ -1611,7 +1500,7 @@ export function Support() {
           {[
             [
               "Why are there no executions?",
-              "Only active workflows can run. Select Run on My Automations; n8n must be listening for a test event before you submit the workflow input.",
+              "Workflow execution has not been connected yet, so no runs are recorded.",
             ],
             [
               "How do I connect an integration?",

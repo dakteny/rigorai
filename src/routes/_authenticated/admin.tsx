@@ -586,7 +586,7 @@ function Admin() {
                 </select>
               </label>
               {edit.kind === "workflow" && (
-                <p className="text-xs text-muted-foreground">Execution: n8n connection required</p>
+                <p className="text-xs text-muted-foreground">Execution: not connected</p>
               )}
               <div className="flex justify-end gap-2">
                 <Button

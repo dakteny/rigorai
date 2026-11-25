@@ -29,13 +29,6 @@ Browser configuration: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (man
 Server configuration: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `LOVABLE_API_KEY`.
 Never use server credentials in browser code. AI requests use the Lovable AI Gateway, with `openai/gpt-6-astra`, not a browser OpenAI key. Usage is subject to workspace availability and credits.
 
-## n8n automation execution
-
-Authenticated users can run only their own active workflows. The server derives the user identity from the validated session, validates the workflow and input, sends the request to n8n, and records the real result in `automation_executions`. Draft/paused workflows cannot run, execution records are not client-writable, and a 30-second timeout records a failed run. Inputs and returned outputs appear in the private execution history; avoid submitting secrets or unnecessary personal information.
-
-`N8N_WEBHOOK_URL` is stored as a server secret and currently points to the owner-supplied n8n **test** webhook. Before clicking Run Automation, open the n8n workflow and select **Listen for test event**; an inactive test listener returns a failed execution with recovery instructions. For production, activate the n8n workflow, replace the secret value with its `/webhook/` production URL, and publish the app. Optional Header Auth uses `N8N_WEBHOOK_SECRET` and `N8N_WEBHOOK_HEADER` (default `Authorization`) when those secrets are configured. No webhook URL or secret is exposed to browser code.
-
-This implementation uses synchronous webhook responses, not signed result callbacks. No custom per-account run limit has been added; the existing platform limits remain unchanged pending the owner's choice.
 
 ## External-service blockers
 
@@ -61,6 +54,5 @@ Credential forms use POST and login/signup submission waits for hydration. Recov
 
 Traces, videos and automatic screenshots are disabled to avoid saving credentials or recovery URLs. Reports go under `/tmp/browser/rigor-auth-e2e/`. Keep failure output private. `e2e/website-admin.spec.ts` covers all-plan admin access, real settings changes, public footer read-back, audit actor/time/diffs, no-op saves, and rejection of customer audit writes. `e2e/rls.spec.ts` verifies two-customer isolation, ownership-transfer denial, restricted profile/system writes, and disabled-account protection against the real database. Delivered-email confirmation/recovery and live AI verification remain separate launch checks.
 
-For the real n8n check, set `E2E_N8N=1` and run `bunx playwright test e2e/n8n.spec.ts --project=desktop`. This opt-in test creates a disposable account and active workflow, submits real input through the UI, and verifies that the returned status, output/error, ownership and private history match the stored execution. It never saves credentials, tokens, screenshots or traces. The real check passed for n8n's inactive-test-listener failure path; a successful n8n completion remains unverified until the workflow is listening for a test event.
 
 The platform is not production-ready until the outstanding configuration, abuse protection, and authenticated end-to-end checks are completed.

@@ -9,7 +9,6 @@ import {
   MessageSquare,
   ShoppingBag,
   Mail,
-  Workflow,
   Bot,
   ChevronDown,
 } from "lucide-react";
@@ -105,9 +104,6 @@ function Index() {
             </span>
             <span className="partner">
               <Mail size={22} /> Google
-            </span>
-            <span className="partner">
-              <Workflow size={22} /> n8n
             </span>
             <span className="partner">
               <Sparkles size={22} /> OpenAI
